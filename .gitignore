@@ -1,0 +1,15 @@
+# Auto memory i lokalna konfiguracja Claude Code (jesli kiedys trafi do repo)
+.claude/settings.local.json
+
+# Standardowe smieci Python / Node - dostosuj do swojego stosu
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+.env
+.DS_Store
+
+# Pliki raportow agentow - zostaw .gitkeep, ale rozwaz czy chcesz commitowac
+# faktyczne raporty (jesli tak, usun ponizsza linie)
+# docs/agent-runs/*.md
