@@ -4,7 +4,23 @@ import { useState } from "react";
 import { analyseCV, type AnalyseResult } from "@/lib/api";
 import MatchScore from "@/components/MatchScore";
 import SaveApplicationModal from "@/components/SaveApplicationModal";
-import { Loader2 } from "lucide-react";
+import CvInput from "@/components/CvInput";
+import TailorSection from "@/components/TailorSection";
+import { Loader2, CheckCircle2 } from "lucide-react";
+
+const inputStyle: React.CSSProperties = {
+  background: "#111111",
+  border: "1px solid #222222",
+  color: "#F5F5F5",
+  padding: "12px",
+  fontSize: "0.8rem",
+  resize: "none",
+  outline: "none",
+  width: "100%",
+  height: "240px",
+  fontFamily: "monospace",
+  lineHeight: 1.6,
+};
 
 export default function AnalysePage() {
   const [cv, setCv] = useState("");
@@ -16,82 +32,121 @@ export default function AnalysePage() {
   const [saved, setSaved] = useState(false);
 
   async function handleAnalyse() {
-    if (!cv.trim() || !jd.trim()) {
-      setError("Please fill in both fields.");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    setSaved(false);
-    try {
-      const data = await analyseCV(cv, jd);
-      setResult(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Analysis failed.");
-    } finally {
-      setLoading(false);
-    }
+    if (!cv.trim() || !jd.trim()) { setError("Fill in both fields first."); return; }
+    setLoading(true); setError(null); setResult(null); setSaved(false);
+    try { setResult(await analyseCV(cv, jd)); }
+    catch (e) { setError(e instanceof Error ? e.message : "Analysis failed."); }
+    finally { setLoading(false); }
   }
 
   return (
-    <div className="max-w-3xl mx-auto flex flex-col gap-6">
-      <h1 className="text-2xl font-bold text-slate-100">Analyse CV Match</h1>
+    <div className="flex flex-col gap-10 max-w-4xl">
+      {/* Heading */}
+      <div>
+        <p className="uppercase tracking-widest font-medium mb-2" style={{ fontSize: "0.65rem", color: "#666666" }}>
+          AI Analysis
+        </p>
+        <h1 className="font-display font-bold uppercase leading-none" style={{ fontSize: "3rem", color: "#F5F5F5" }}>
+          Analyse Match
+        </h1>
+      </div>
 
+      {/* Two-column inputs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-slate-400 font-medium">Your CV</label>
-          <textarea
-            className="bg-[#1e293b] border border-[#334155] rounded-xl p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none h-64"
-            placeholder="Paste your CV here…"
-            value={cv}
-            onChange={(e) => setCv(e.target.value)}
-          />
+          <label
+            className="uppercase tracking-widest font-medium"
+            style={{ fontSize: "0.65rem", color: "#666666" }}
+          >
+            Your CV
+          </label>
+          <CvInput value={cv} onChange={setCv} />
         </div>
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-slate-400 font-medium">Job Description</label>
+          <label
+            className="uppercase tracking-widest font-medium"
+            style={{ fontSize: "0.65rem", color: "#666666" }}
+          >
+            Job Description
+          </label>
           <textarea
-            className="bg-[#1e293b] border border-[#334155] rounded-xl p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none h-64"
-            placeholder="Paste the job description here…"
             value={jd}
             onChange={(e) => setJd(e.target.value)}
+            placeholder="Paste the job description here…"
+            style={inputStyle}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "#E8FF00")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "#222222")}
           />
         </div>
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p style={{ color: "#FF3D00", fontSize: "0.8rem" }} className="-mt-6">{error}</p>}
 
+      {/* CTA */}
       <button
         onClick={handleAnalyse}
         disabled={loading}
-        className="self-start flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium px-6 py-2.5 rounded-xl transition-colors"
+        className="flex items-center justify-center gap-2 w-full py-4 uppercase tracking-widest font-display font-bold text-sm transition-opacity"
+        style={{
+          background: loading ? "#b3c700" : "#E8FF00",
+          color: "#080808",
+          cursor: loading ? "not-allowed" : "pointer",
+          letterSpacing: "0.1em",
+        }}
       >
-        {loading && <Loader2 size={16} className="animate-spin" />}
-        {loading ? "Analysing…" : "Analyse Match"}
+        {loading && <Loader2 size={15} className="animate-spin" />}
+        {loading ? "Analysing…" : "Analyse →"}
       </button>
 
+      {/* Results */}
       {result && (
-        <div className="flex flex-col gap-6 bg-[#1e293b] border border-[#334155] rounded-2xl p-6">
-          <div className="flex flex-col items-center">
+        <div className="flex flex-col gap-8">
+          {/* Score */}
+          <div style={{ borderLeft: "2px solid #E8FF00", paddingLeft: "24px" }}>
             <MatchScore score={result.match_score} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Keywords */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-sm font-semibold text-slate-400 mb-2">Matched Keywords</h3>
+              <p className="uppercase tracking-widest font-medium mb-3" style={{ fontSize: "0.65rem", color: "#666666" }}>
+                Matched Keywords
+              </p>
               <div className="flex flex-wrap gap-2">
                 {result.matched_keywords.map((kw) => (
-                  <span key={kw} className="bg-green-900/40 text-green-400 border border-green-700/40 text-xs px-2 py-1 rounded-full">
+                  <span
+                    key={kw}
+                    className="uppercase tracking-widest font-medium"
+                    style={{
+                      fontSize: "0.65rem",
+                      background: "#1a1a00",
+                      color: "#E8FF00",
+                      padding: "4px 8px",
+                      border: "1px solid #333300",
+                    }}
+                  >
                     {kw}
                   </span>
                 ))}
               </div>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-400 mb-2">Missing Keywords</h3>
+              <p className="uppercase tracking-widest font-medium mb-3" style={{ fontSize: "0.65rem", color: "#666666" }}>
+                Missing Keywords
+              </p>
               <div className="flex flex-wrap gap-2">
                 {result.missing_keywords.map((kw) => (
-                  <span key={kw} className="bg-red-900/40 text-red-400 border border-red-700/40 text-xs px-2 py-1 rounded-full">
+                  <span
+                    key={kw}
+                    className="uppercase tracking-widest font-medium"
+                    style={{
+                      fontSize: "0.65rem",
+                      background: "#1a0000",
+                      color: "#FF3D00",
+                      padding: "4px 8px",
+                      border: "1px solid #330000",
+                    }}
+                  >
                     {kw}
                   </span>
                 ))}
@@ -99,45 +154,74 @@ export default function AnalysePage() {
             </div>
           </div>
 
+          {/* Suggestions */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-400 mb-3">Suggestions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <p className="uppercase tracking-widest font-medium mb-4" style={{ fontSize: "0.65rem", color: "#666666" }}>
+              Suggestions
+            </p>
+            <div className="flex flex-col gap-0" style={{ borderTop: "1px solid #222222" }}>
               {result.suggestions.map((s, i) => (
-                <div key={i} className="bg-[#0f172a] border border-[#334155] rounded-xl p-3 text-sm text-slate-300">
-                  {s}
+                <div
+                  key={i}
+                  className="flex gap-5 py-5"
+                  style={{ borderBottom: "1px solid #222222", borderLeft: "2px solid #222222", paddingLeft: "20px" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderLeftColor = "#E8FF00")}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderLeftColor = "#222222")}
+                >
+                  <span
+                    className="font-mono font-bold tabular shrink-0 mt-0.5"
+                    style={{ fontSize: "0.7rem", color: "#E8FF00" }}
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <p className="text-sm leading-relaxed" style={{ color: "#F5F5F5" }}>{s}</p>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* Summary */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-400 mb-2">Summary</h3>
-            <p className="text-slate-300 text-sm leading-relaxed">{result.summary}</p>
+            <p className="uppercase tracking-widest font-medium mb-3" style={{ fontSize: "0.65rem", color: "#666666" }}>
+              Summary
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: "#999999" }}>{result.summary}</p>
           </div>
 
+          {/* Tailor */}
+          <TailorSection
+            cv={cv}
+            jobDescription={jd}
+            missingKeywords={result.missing_keywords}
+            suggestions={result.suggestions}
+          />
+
+          {/* Save */}
           {saved ? (
-            <p className="text-green-400 text-sm font-medium">Application saved!</p>
+            <div className="flex items-center gap-2 text-sm" style={{ color: "#00FF88" }}>
+              <CheckCircle2 size={15} />
+              Application saved
+            </div>
           ) : (
             <button
               onClick={() => setShowModal(true)}
-              className="self-start bg-[#0f172a] border border-[#334155] hover:border-indigo-500 text-slate-200 font-medium px-5 py-2 rounded-xl text-sm transition-colors"
+              className="self-start uppercase tracking-widest font-display font-bold text-xs px-5 py-3 transition-colors"
+              style={{ border: "1px solid #E8FF00", color: "#E8FF00", background: "transparent" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#E8FF00"; e.currentTarget.style.color = "#080808"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#E8FF00"; }}
             >
-              Save Application
+              Save Application →
             </button>
           )}
         </div>
       )}
 
-      {showModal && result && (
-        <SaveApplicationModal
-          matchScore={result.match_score}
-          onClose={() => setShowModal(false)}
-          onSaved={() => {
-            setShowModal(false);
-            setSaved(true);
-          }}
-        />
-      )}
+      <SaveApplicationModal
+        matchScore={result?.match_score ?? 0}
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSaved={() => { setShowModal(false); setSaved(true); }}
+      />
     </div>
   );
 }

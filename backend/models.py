@@ -26,6 +26,21 @@ class AnalyseResponse(BaseModel):
     summary: str                      # 2-sentence plain-English summary
 
 
+class PdfExtractResponse(BaseModel):
+    text: str
+
+
+class TailorRequest(BaseModel):
+    cv: str
+    job_description: str
+    missing_keywords: list[str] = []
+    suggestions: list[str] = []
+
+
+class TailorResponse(BaseModel):
+    tailored_cv: str
+
+
 class ApplicationCreate(BaseModel):
     company: str
     role: str

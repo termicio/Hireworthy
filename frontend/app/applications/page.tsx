@@ -1,9 +1,23 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getApplications, updateApplication, deleteApplication, type Application, type ApplicationStatus } from "@/lib/api";
+import {
+  getApplications, updateApplication, deleteApplication,
+  type Application, type ApplicationStatus,
+} from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
-import { Trash2, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Trash2 } from "lucide-react";
+
+function ScoreChip({ score }: { score: number | null }) {
+  if (score == null) return <span style={{ color: "#444444", fontFamily: "monospace" }}>—</span>;
+  const color = score >= 70 ? "#00FF88" : score >= 50 ? "#E8FF00" : "#FF3D00";
+  return (
+    <span className="font-mono font-bold tabular" style={{ color, fontSize: "0.85rem" }}>
+      {score}%
+    </span>
+  );
+}
 
 export default function ApplicationsPage() {
   const [apps, setApps] = useState<Application[]>([]);
@@ -11,16 +25,10 @@ export default function ApplicationsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchApps = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getApplications();
-      setApps(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load applications.");
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true); setError(null);
+    try { setApps(await getApplications()); }
+    catch (e) { setError(e instanceof Error ? e.message : "Failed to load."); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchApps(); }, [fetchApps]);
@@ -29,88 +37,119 @@ export default function ApplicationsPage() {
     try {
       const updated = await updateApplication(id, { status: next });
       setApps((prev) => prev.map((a) => (a.id === id ? updated : a)));
-    } catch {
-      // keep current state on failure
-    }
+    } catch { /* keep state */ }
   }
 
   async function handleDelete(id: string) {
     try {
       await deleteApplication(id);
       setApps((prev) => prev.filter((a) => a.id !== id));
-    } catch {
-      // keep current state on failure
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-slate-400 mt-8">
-        <Loader2 size={18} className="animate-spin" /> Loading applications…
-      </div>
-    );
-  }
-
-  if (error) {
-    return <p className="text-red-400 mt-8">{error}</p>;
-  }
-
-  if (apps.length === 0) {
-    return <p className="text-slate-400 mt-8">No applications yet. Analyse a CV to get started.</p>;
+    } catch { /* keep state */ }
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold text-slate-100">Applications</h1>
-      <div className="bg-[#1e293b] border border-[#334155] rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[#334155] text-slate-400">
-              <th className="text-left px-4 py-3 font-medium">Company</th>
-              <th className="text-left px-4 py-3 font-medium">Role</th>
-              <th className="text-left px-4 py-3 font-medium">Status</th>
-              <th className="text-left px-4 py-3 font-medium">Match</th>
-              <th className="text-left px-4 py-3 font-medium">Applied</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {apps.map((app) => (
-              <tr key={app.id} className="border-b border-[#334155] last:border-0 hover:bg-[#0f172a]/40 transition-colors">
-                <td className="px-4 py-3 font-medium text-slate-200">{app.company}</td>
-                <td className="px-4 py-3 text-slate-300">{app.role}</td>
-                <td className="px-4 py-3">
-                  <StatusBadge
-                    status={app.status}
-                    onClick={(next) => handleStatusChange(app.id, next)}
-                  />
-                </td>
-                <td className="px-4 py-3 text-slate-300">
-                  {app.match_score != null ? (
-                    <span className={app.match_score >= 70 ? "text-green-400" : app.match_score >= 50 ? "text-yellow-400" : "text-red-400"}>
-                      {app.match_score}%
-                    </span>
-                  ) : (
-                    <span className="text-slate-500">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-slate-400">
-                  {new Date(app.created_at).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => handleDelete(app.id)}
-                    className="text-slate-500 hover:text-red-400 transition-colors"
-                    aria-label="Delete"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="flex flex-col gap-10">
+      {/* Heading */}
+      <div>
+        <p className="uppercase tracking-widest font-medium mb-2" style={{ fontSize: "0.65rem", color: "#666666" }}>
+          Tracking
+        </p>
+        <h1 className="font-display font-bold uppercase leading-none" style={{ fontSize: "3rem", color: "#F5F5F5" }}>
+          Applications
+        </h1>
       </div>
+
+      {error && <p style={{ color: "#FF3D00" }} className="text-sm -mt-6">{error}</p>}
+
+      {loading ? (
+        <div className="flex flex-col gap-px" style={{ background: "#222222" }}>
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-14" style={{ background: "#111111" }} />
+          ))}
+        </div>
+      ) : apps.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 gap-6">
+          <p
+            className="font-display font-bold uppercase tracking-widest"
+            style={{ fontSize: "1.5rem", color: "#222222" }}
+          >
+            No Applications Yet
+          </p>
+          <p style={{ color: "#444444", fontSize: "0.85rem" }}>
+            Go to Analyse to review a job posting and save your first application.
+          </p>
+          <a
+            href="/analyse"
+            className="uppercase tracking-widest font-display font-bold px-6 py-3 text-sm"
+            style={{ background: "#E8FF00", color: "#080808" }}
+          >
+            Go to Analyse →
+          </a>
+        </div>
+      ) : (
+        <div style={{ border: "1px solid #222222" }}>
+          {/* Table header */}
+          <div
+            className="grid text-left"
+            style={{
+              gridTemplateColumns: "1.5fr 2fr 120px 80px 110px 48px",
+              borderBottom: "1px solid #222222",
+              padding: "0 16px",
+            }}
+          >
+            {["Company", "Role", "Status", "Match", "Date", ""].map((h) => (
+              <div
+                key={h}
+                className="py-3 uppercase tracking-widest font-medium"
+                style={{ fontSize: "0.65rem", color: "#444444" }}
+              >
+                {h}
+              </div>
+            ))}
+          </div>
+
+          {/* Rows */}
+          {apps.map((app) => (
+            <div
+              key={app.id}
+              className="accent-row grid items-center"
+              style={{
+                gridTemplateColumns: "1.5fr 2fr 120px 80px 110px 48px",
+                borderBottom: "1px solid #1a1a1a",
+                padding: "0 16px",
+                minHeight: "56px",
+                background: "#111111",
+              }}
+            >
+              <span className="font-display font-semibold text-sm" style={{ color: "#F5F5F5" }}>
+                {app.company}
+              </span>
+              <span className="text-sm" style={{ color: "#666666" }}>{app.role}</span>
+              <span>
+                <StatusBadge status={app.status} onClick={(n) => handleStatusChange(app.id, n)} />
+              </span>
+              <span><ScoreChip score={app.match_score} /></span>
+              <span className="font-mono tabular text-xs" style={{ color: "#444444" }}>
+                {new Date(app.created_at).toLocaleDateString("en-GB", {
+                  day: "2-digit", month: "short", year: "2-digit",
+                })}
+              </span>
+              <span>
+                <button
+                  onClick={() => handleDelete(app.id)}
+                  aria-label="Delete"
+                  className="flex items-center justify-center w-8 h-8 transition-colors"
+                  style={{ color: "#333333" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#FF3D00")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#333333")}
+                >
+                  <Trash2 size={13} />
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

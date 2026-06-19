@@ -4,11 +4,11 @@ import type { ApplicationStatus } from "@/lib/api";
 
 const STATUS_ORDER: ApplicationStatus[] = ["applied", "interview", "offer", "rejected"];
 
-const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  applied: "bg-blue-900/40 text-blue-400 border-blue-700/40",
-  interview: "bg-yellow-900/40 text-yellow-400 border-yellow-700/40",
-  offer: "bg-green-900/40 text-green-400 border-green-700/40",
-  rejected: "bg-red-900/40 text-red-400 border-red-700/40",
+const STATUS_STYLES: Record<ApplicationStatus, React.CSSProperties> = {
+  applied:   { background: "#1a1a1a", color: "#666666", border: "1px solid #444444" },
+  interview: { background: "#E8FF00", color: "#080808", border: "1px solid #E8FF00" },
+  offer:     { background: "#00FF88", color: "#080808", border: "1px solid #00FF88" },
+  rejected:  { background: "#FF3D00", color: "#080808", border: "1px solid #FF3D00" },
 };
 
 interface StatusBadgeProps {
@@ -20,14 +20,23 @@ export default function StatusBadge({ status, onClick }: StatusBadgeProps) {
   function handleClick() {
     if (!onClick) return;
     const idx = STATUS_ORDER.indexOf(status);
-    const next = STATUS_ORDER[(idx + 1) % STATUS_ORDER.length];
-    onClick(next);
+    onClick(STATUS_ORDER[(idx + 1) % STATUS_ORDER.length]);
   }
 
   return (
     <button
       onClick={onClick ? handleClick : undefined}
-      className={`border text-xs px-2.5 py-1 rounded-full font-medium capitalize transition-opacity hover:opacity-80 ${STATUS_STYLES[status]} ${onClick ? "cursor-pointer" : "cursor-default"}`}
+      title={onClick ? "Click to advance" : undefined}
+      style={{
+        ...STATUS_STYLES[status],
+        fontSize: "0.65rem",
+        letterSpacing: "0.1em",
+        padding: "3px 8px",
+        cursor: onClick ? "pointer" : "default",
+        textTransform: "uppercase",
+        fontWeight: 600,
+        fontFamily: "inherit",
+      }}
     >
       {status}
     </button>

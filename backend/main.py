@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import applications, analyse
+from routes import applications, analyse, pdf, tailor
 from database import create_pool, close_pool
 
 
@@ -24,6 +24,8 @@ app.add_middleware(
 
 app.include_router(applications.router, prefix="/applications", tags=["applications"])
 app.include_router(analyse.router, prefix="/analyse", tags=["analyse"])
+app.include_router(pdf.router, prefix="/pdf", tags=["pdf"])
+app.include_router(tailor.router, prefix="/tailor", tags=["tailor"])
 
 @app.get("/health")
 def health():

@@ -62,3 +62,38 @@ export const analyseCV = (cv: string, job_description: string) =>
     method: "POST",
     body: JSON.stringify({ cv, job_description }),
   });
+
+// --- PDF ---
+
+export interface PdfExtractResult {
+  text: string;
+}
+
+export async function uploadPDF(file: File): Promise<PdfExtractResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_URL}/pdf/extract`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Upload failed" }));
+    throw new Error((err as { detail?: string }).detail ?? "Upload failed");
+  }
+  return res.json() as Promise<PdfExtractResult>;
+}
+
+// --- Tailor ---
+
+export interface TailorResult {
+  tailored_cv: string;
+}
+
+export async function tailorCV(req: {
+  cv: string;
+  job_description: string;
+  missing_keywords: string[];
+  suggestions: string[];
+}): Promise<TailorResult> {
+  return request<TailorResult>("/tailor/", { method: "POST", body: JSON.stringify(req) });
+}

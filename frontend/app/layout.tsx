@@ -1,22 +1,32 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import { Space_Grotesk, Inter } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Job Tracker",
   description: "AI-powered job application tracker",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="flex min-h-screen bg-[#0f172a] text-slate-200">
+    <html lang="en" className={cn(spaceGrotesk.variable, inter.variable)}>
+      <body className="flex min-h-screen bg-background text-foreground antialiased">
         <Sidebar />
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-8 overflow-auto min-h-screen">{children}</main>
       </body>
     </html>
   );
