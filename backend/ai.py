@@ -4,7 +4,7 @@ load_dotenv()
 
 import anthropic
 import json
-from models import AnalyseResponse
+from models import AnalyseResponse, ReviewResponse
 
 client = anthropic.AsyncAnthropic()
 
@@ -61,6 +61,42 @@ Rules:
 - Return ONLY the full rewritten CV text with no preamble, no explanation, no markdown fences"""
 
 
+REVIEW_PROMPT = """You are a ruthlessly honest, senior technical recruiter with 15+ years of experience. Your job is to give a frank, critical audit of a CV — no encouragement, no softening, no empty praise. If something is weak, say so clearly.
+
+CV to review:
+__CV__
+
+Evaluate the CV across exactly these 5 sections (use these exact names): "Contact Info", "Summary/Objective", "Experience", "Skills", "Education". For each section give a score 0-100 and a one-sentence comment explaining the score.
+
+Identify exactly 3 of the weakest bullet points in the CV. For each provide:
+- "original": the exact quote from the CV
+- "reason": why this bullet is weak (vague, no metrics, passive voice, generic, etc.)
+- "rewritten": a stronger version — do NOT invent facts, dates, or numbers not present in the original
+
+Identify any red flags (gaps in employment dates, no quantifiable results anywhere, typos, generic filler phrases, missing contact info, etc.). This list can be empty if there are genuinely no red flags.
+
+Identify exactly 3 quick wins — the 3 highest-impact improvements the candidate could make today, ordered from most impactful to least.
+
+Respond ONLY with a valid JSON object — no preamble, no markdown, no backticks. Use this exact structure:
+{
+  "overall_score": <integer 0-100>,
+  "sections": [
+    {"name": "Contact Info", "score": <integer 0-100>, "comment": "<one sentence>"},
+    {"name": "Summary/Objective", "score": <integer 0-100>, "comment": "<one sentence>"},
+    {"name": "Experience", "score": <integer 0-100>, "comment": "<one sentence>"},
+    {"name": "Skills", "score": <integer 0-100>, "comment": "<one sentence>"},
+    {"name": "Education", "score": <integer 0-100>, "comment": "<one sentence>"}
+  ],
+  "weak_bullets": [
+    {"original": "<exact quote>", "reason": "<why it is weak>", "rewritten": "<stronger version>"},
+    {"original": "<exact quote>", "reason": "<why it is weak>", "rewritten": "<stronger version>"},
+    {"original": "<exact quote>", "reason": "<why it is weak>", "rewritten": "<stronger version>"}
+  ],
+  "red_flags": ["<specific problem>"],
+  "quick_wins": ["<most impactful fix>", "<second fix>", "<third fix>"]
+}"""
+
+
 def _strip_fences(text: str) -> str:
     """Remove markdown code fences if model wraps response in them."""
     text = text.strip()
@@ -90,6 +126,18 @@ async def analyse_cv(cv: str, job_description: str) -> AnalyseResponse:
     raw = _strip_fences(response.content[0].text)
     data = json.loads(raw)
     return AnalyseResponse(**data)
+
+
+async def review_cv(cv: str) -> ReviewResponse:
+    prompt = REVIEW_PROMPT.replace("__CV__", cv)
+    response = await client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = _strip_fences(response.content[0].text)
+    data = json.loads(raw)
+    return ReviewResponse(**data)
 
 
 async def tailor_cv(

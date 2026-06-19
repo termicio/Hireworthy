@@ -17,8 +17,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Job Tracker",
-  description: "AI-powered job application tracker",
+  title: "Hireworthy — Know exactly where your CV stands",
+  description: "AI-powered CV review and job match analysis. Get honest, specific feedback on your CV in seconds.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

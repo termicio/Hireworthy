@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 from enum import Enum
 
@@ -64,3 +64,42 @@ class ApplicationOut(BaseModel):
     notes: Optional[str]
     created_at: datetime
     updated_at: datetime
+
+
+class SectionScore(BaseModel):
+    name: str
+    score: int
+    comment: str
+
+
+class WeakBullet(BaseModel):
+    original: str
+    reason: str
+    rewritten: str
+
+
+class ReviewRequest(BaseModel):
+    cv: str
+
+
+class ReviewResponse(BaseModel):
+    overall_score: int
+    sections: list[SectionScore]
+    weak_bullets: list[WeakBullet]
+    red_flags: list[str]
+    quick_wins: list[str]
+
+
+import re as _re
+
+class PDFGenerateRequest(BaseModel):
+    cv_text: str
+    layout: Literal["classic", "modern", "split"]
+    color: Optional[str] = None
+
+    @property
+    def safe_color(self) -> Optional[str]:
+        """Return color only if it is a valid CSS hex color (#RGB or #RRGGBB)."""
+        if self.color and _re.fullmatch(r"#[0-9A-Fa-f]{3}(?:[0-9A-Fa-f]{3})?", self.color):
+            return self.color
+        return None

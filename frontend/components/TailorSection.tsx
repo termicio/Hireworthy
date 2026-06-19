@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { tailorCV } from "@/lib/api";
+import PdfExportSection from "@/components/PdfExportSection";
 
 interface Props {
   cv: string;
@@ -128,6 +129,8 @@ export default function TailorSection({ cv, jobDescription, missingKeywords, sug
           >
             {copied ? "Copied!" : "Copy Tailored CV →"}
           </button>
+
+          <PdfExportSection cvText={tailoredCv} />
         </div>
       )}
     </div>

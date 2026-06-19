@@ -23,6 +23,16 @@ export interface AnalyseResult {
   summary: string;
 }
 
+export interface SectionScore { name: string; score: number; comment: string; }
+export interface WeakBullet { original: string; reason: string; rewritten: string; }
+export interface ReviewResult {
+  overall_score: number;
+  sections: SectionScore[];
+  weak_bullets: WeakBullet[];
+  red_flags: string[];
+  quick_wins: string[];
+}
+
 // --- API helpers ---
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -89,6 +99,15 @@ export interface TailorResult {
   tailored_cv: string;
 }
 
+// --- Review ---
+
+export async function reviewCV(cv: string): Promise<ReviewResult> {
+  return request<ReviewResult>("/review/", {
+    method: "POST",
+    body: JSON.stringify({ cv }),
+  });
+}
+
 export async function tailorCV(req: {
   cv: string;
   job_description: string;
@@ -96,4 +115,25 @@ export async function tailorCV(req: {
   suggestions: string[];
 }): Promise<TailorResult> {
   return request<TailorResult>("/tailor/", { method: "POST", body: JSON.stringify(req) });
+}
+
+// --- PDF Generate ---
+
+export type PDFLayout = "classic" | "modern" | "split";
+
+export async function generatePDF(req: {
+  cv_text: string;
+  layout: PDFLayout;
+  color: string | null;
+}): Promise<Blob> {
+  const res = await fetch(`${API_URL}/pdf/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "PDF generation failed" }));
+    throw new Error((err as { detail?: string }).detail ?? "PDF generation failed");
+  }
+  return res.blob();
 }

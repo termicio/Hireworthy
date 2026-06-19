@@ -99,6 +99,18 @@
   width: 200px;
 }
 
+/* Collapsed: centre icons, hide labels */
+.sidebar-shell:not(:hover) .sidebar-nav-link {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.sidebar-shell:not(:hover) .sidebar-nav-label {
+  display: none;
+}
+
+
+
 /* ── Table row hover accent ───────────────────────────────── */
 .accent-row {
   border-left: 2px solid transparent;

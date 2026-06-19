@@ -2,32 +2,60 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BriefcaseBusiness, ScanText } from "lucide-react";
+import { useState } from "react";
+import { LayoutDashboard, BriefcaseBusiness, Target, FileSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const links = [
-  { href: "/dashboard",    label: "Dashboard",    icon: LayoutDashboard },
-  { href: "/applications", label: "Applications", icon: BriefcaseBusiness },
-  { href: "/analyse",      label: "Analyse",      icon: ScanText },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+const links: NavItem[] = [
+  { href: "/review",        label: "Review CV",    icon: FileSearch },
+  { href: "/analyse",       label: "Match to Job", icon: Target },
+  { href: "/applications",  label: "Applications", icon: BriefcaseBusiness },
+  { href: "/dashboard",     label: "Dashboard",    icon: LayoutDashboard },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <aside
       className="sidebar-shell shrink-0 flex flex-col bg-card border-r border-border"
       style={{ minHeight: "100vh" }}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
     >
-      {/* Logo mark */}
-      <div className="sidebar-logo flex items-center justify-center h-14 border-b border-border shrink-0">
-        <div
-          className="w-7 h-7 flex items-center justify-center"
-          style={{ background: "#E8FF00" }}
-        >
-          <BriefcaseBusiness size={14} style={{ color: "#080808" }} strokeWidth={2.5} />
-        </div>
-      </div>
+      {/* Wordmark */}
+      <Link
+        href="/"
+        className="sidebar-logo flex items-center h-14 shrink-0"
+        style={{
+          borderBottom: "1px solid #222222",
+          justifyContent: expanded ? "flex-start" : "center",
+          paddingLeft: expanded ? "16px" : "0",
+        }}
+      >
+        {expanded ? (
+          <span
+            className="font-display font-bold uppercase whitespace-nowrap"
+            style={{ color: "#E8FF00", fontSize: "0.8rem", letterSpacing: "0.18em" }}
+          >
+            HIREWORTHY
+          </span>
+        ) : (
+          <span
+            className="font-display font-bold"
+            style={{ color: "#E8FF00", fontSize: "1.25rem" }}
+          >
+            H
+          </span>
+        )}
+      </Link>
 
       {/* Nav */}
       <nav className="flex flex-col gap-0 flex-1 pt-2 px-0">
@@ -38,7 +66,7 @@ export default function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 h-11 px-4 text-sm whitespace-nowrap transition-colors",
+                "sidebar-nav-link flex items-center gap-3 h-11 px-4 text-sm whitespace-nowrap transition-colors",
                 active
                   ? "text-[#E8FF00] bg-[#E8FF00]/5"
                   : "text-[#666666] hover:text-[#F5F5F5] hover:bg-[#1a1a1a]"
@@ -50,7 +78,7 @@ export default function Sidebar() {
                 strokeWidth={active ? 2.2 : 1.6}
                 className="shrink-0"
               />
-              <span className="sidebar-nav-label font-display font-medium text-[13px]">
+              <span className={cn("sidebar-nav-label font-display text-[13px]", active ? "font-bold" : "font-medium")}>
                 {label}
               </span>
             </Link>
