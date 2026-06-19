@@ -1,8 +1,18 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes import applications, analyse
+from database import create_pool, close_pool
 
-app = FastAPI(title="Job Tracker API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await create_pool()
+    yield
+    await close_pool()
+
+
+app = FastAPI(title="Job Tracker API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
