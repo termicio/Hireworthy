@@ -39,62 +39,148 @@ Scoring guide:
 
 Be specific in suggestions — reference actual content from the CV and JD, not generic advice."""
 
-TAILOR_PROMPT = """You are an expert CV writer. Your task is to rewrite the provided CV so it better matches the job description.
+TAILOR_PROMPT = """You are an expert CV writer who knows exactly how both
+humans and automated hiring systems evaluate CVs.
 
-CV:
+Your task is to rewrite this CV to fix THREE categories of problems:
+
+CATEGORY 1 — ATS compatibility (automated systems):
+- Convert any multi-column or table layout to clean single-column format
+- Standardise section headers to: CONTACT, SUMMARY, EXPERIENCE, EDUCATION, SKILLS, PROJECTS
+- Convert dates to consistent format: "Jan 2022 – Mar 2024" or "2022 – 2024"
+- Remove any decorative elements described in text (icons, borders, columns)
+- Ensure all content is in the main text body, not in headers/footers/sidebars
+
+CATEGORY 2 — Human readability:
+- Rewrite vague bullet points to start with strong action verbs
+- Add metrics and outcomes wherever the original implies them without stating them
+  DO NOT invent specific numbers that aren't implied — use ranges or qualitative improvements
+- Remove filler phrases: "passionate about", "team player", "hard worker", "results-driven"
+- Ensure every bullet answers: what did you DO, and what was the RESULT
+
+CATEGORY 3 — Job match (keyword alignment):
+- Naturally incorporate these missing keywords from the job description: __MISSING_KEYWORDS__
+  Only add them where they genuinely fit existing experience — never fabricate
+- Address these recruiter suggestions: __SUGGESTIONS__
+- Mirror the language and terminology used in the job description where appropriate
+
+Original CV:
 __CV__
 
 Job Description:
 __JD__
 
-Missing Keywords to incorporate:
-__MISSING_KEYWORDS__
+STRICT RULES:
+- Never invent experience, companies, dates, or qualifications not in the original
+- Only rewrite and restructure existing content
+- Keep all contact information exactly as-is
+- Return ONLY the full rewritten CV text — no explanations, no preamble, no markdown fences
+- Write in the same language as the original CV"""
 
-Suggested improvements:
-__SUGGESTIONS__
+TAILOR_GENERAL_PROMPT = """You are an expert CV writer who knows exactly how both
+humans and automated hiring systems evaluate CVs.
 
-Rules:
-- Naturally weave the missing keywords into existing bullet points where they genuinely fit
-- NEVER invent false experience, dates, companies, or skills the candidate does not have
-- Preserve the overall structure and sections of the original CV
-- Only expand or rephrase existing content — do not add new roles or qualifications
-- Return ONLY the full rewritten CV text with no preamble, no explanation, no markdown fences"""
+Your task is to rewrite this CV to fix TWO categories of problems:
+
+CATEGORY 1 — ATS compatibility (automated systems):
+- Convert any multi-column or table layout to clean single-column format
+- Standardise section headers to: CONTACT, SUMMARY, EXPERIENCE, EDUCATION, SKILLS, PROJECTS
+- Convert dates to consistent format: "Jan 2022 – Mar 2024" or "2022 – 2024"
+- Remove any decorative elements described in text (icons, borders, columns)
+- Ensure all content is in the main text body, not in headers/footers/sidebars
+
+CATEGORY 2 — Human readability:
+- Rewrite vague bullet points to start with strong action verbs
+- Add metrics and outcomes wherever the original implies them without stating them
+  (e.g. "helped improve performance" → "Reduced page load time by 40% through...")
+  DO NOT invent specific numbers that aren't implied — use ranges or qualitative improvements
+- Remove filler phrases: "passionate about", "team player", "hard worker", "results-driven"
+- Ensure every bullet answers: what did you DO, and what was the RESULT
+
+Original CV:
+__CV__
+
+STRICT RULES:
+- Never invent experience, companies, dates, or qualifications not in the original
+- Only rewrite and restructure existing content
+- Keep all contact information exactly as-is
+- Return ONLY the full rewritten CV text — no explanations, no preamble, no markdown fences
+- Write in the same language as the original CV"""
 
 
-REVIEW_PROMPT = """You are a ruthlessly honest, senior technical recruiter with 15+ years of experience. Your job is to give a frank, critical audit of a CV — no encouragement, no softening, no empty praise. If something is weak, say so clearly.
+REVIEW_PROMPT = """You are a ruthlessly honest senior recruiter with 15+ years of experience.
+You review CVs knowing two things most candidates don't:
+
+1. Most CVs are first screened by automated systems before a human ever sees them.
+   These systems struggle with: tables, multiple columns, images, unusual section headers,
+   non-standard date formats, and missing keywords from the job description.
+
+2. Human recruiters spend 6-10 seconds on a first pass. Clarity, specificity,
+   and strong action verbs matter enormously.
+
+Your job is to give brutally honest feedback that addresses BOTH — but never use
+the word "ATS" or technical jargon in your output. Translate every technical issue
+into plain human advice about "reaching more recruiters" or "making it easier to find".
 
 CV to review:
 __CV__
 
-Evaluate the CV across exactly these 5 sections (use these exact names): "Contact Info", "Summary/Objective", "Experience", "Skills", "Education". For each section give a score 0-100 and a one-sentence comment explaining the score.
+---
 
-Identify exactly 3 of the weakest bullet points in the CV. For each provide:
-- "original": the exact quote from the CV
-- "reason": why this bullet is weak (vague, no metrics, passive voice, generic, etc.)
-- "rewritten": a stronger version — do NOT invent facts, dates, or numbers not present in the original
+Evaluate across exactly these 5 sections (use these exact names):
+"Contact Info", "Summary/Objective", "Experience", "Skills", "Education"
 
-Identify any red flags (gaps in employment dates, no quantifiable results anywhere, typos, generic filler phrases, missing contact info, etc.). This list can be empty if there are genuinely no red flags.
+For each section score 0-100 and give ONE sentence explaining the score.
+When scoring, penalize:
+- Missing or hard-to-find contact info
+- Vague bullet points without numbers or outcomes
+- Skills listed without context (just a word dump)
+- Non-standard section names that systems might miss
+- Dates in inconsistent or ambiguous formats
 
-Identify exactly 3 quick wins — the 3 highest-impact improvements the candidate could make today, ordered from most impactful to least.
+Identify exactly 3 of the weakest bullet points. For each:
+- "original": exact quote from the CV
+- "reason": why it is weak (too vague, no metric, passive voice, generic)
+- "rewritten": stronger version — do NOT invent facts not in the original
 
-Respond ONLY with a valid JSON object — no preamble, no markdown, no backticks. Use this exact structure:
+Identify red flags. Check for:
+- Multi-column or table layout (translate as: "Your CV layout may not display correctly for all employers — a single-column format reaches more recruiters")
+- No quantified achievements anywhere
+- Gaps in employment dates
+- Generic filler phrases ("passionate about", "team player", "hard worker")
+- Missing LinkedIn or GitHub when relevant for the role
+- Section headers that are creative but non-standard (e.g. "My Journey" instead of "Experience")
+- Dates written as text instead of numbers ("two years" vs "2022-2024")
+- CV longer than 2 pages for under 5 years experience
+- Photo or personal info (age, marital status) that varies by country norms
+
+Identify exactly 3 quick wins — highest-impact fixes ordered by impact.
+Frame each as a specific action: "Add X to Y section" not "improve your skills section".
+
+Respond ONLY with valid JSON — no preamble, no markdown, no backticks:
 {
   "overall_score": <integer 0-100>,
   "sections": [
-    {"name": "Contact Info", "score": <integer 0-100>, "comment": "<one sentence>"},
-    {"name": "Summary/Objective", "score": <integer 0-100>, "comment": "<one sentence>"},
-    {"name": "Experience", "score": <integer 0-100>, "comment": "<one sentence>"},
-    {"name": "Skills", "score": <integer 0-100>, "comment": "<one sentence>"},
-    {"name": "Education", "score": <integer 0-100>, "comment": "<one sentence>"}
+    {"name": "Contact Info", "score": <integer>, "comment": "<one sentence>"},
+    {"name": "Summary/Objective", "score": <integer>, "comment": "<one sentence>"},
+    {"name": "Experience", "score": <integer>, "comment": "<one sentence>"},
+    {"name": "Skills", "score": <integer>, "comment": "<one sentence>"},
+    {"name": "Education", "score": <integer>, "comment": "<one sentence>"}
   ],
   "weak_bullets": [
-    {"original": "<exact quote>", "reason": "<why it is weak>", "rewritten": "<stronger version>"},
-    {"original": "<exact quote>", "reason": "<why it is weak>", "rewritten": "<stronger version>"},
-    {"original": "<exact quote>", "reason": "<why it is weak>", "rewritten": "<stronger version>"}
+    {"original": "<exact quote>", "reason": "<why weak>", "rewritten": "<stronger version>"},
+    {"original": "<exact quote>", "reason": "<why weak>", "rewritten": "<stronger version>"},
+    {"original": "<exact quote>", "reason": "<why weak>", "rewritten": "<stronger version>"}
   ],
-  "red_flags": ["<specific problem>"],
-  "quick_wins": ["<most impactful fix>", "<second fix>", "<third fix>"]
-}"""
+  "red_flags": ["<plain human advice, no ATS jargon>"],
+  "quick_wins": ["<specific action 1>", "<specific action 2>", "<specific action 3>"]
+}
+
+Scoring guide:
+- 80-100: Strong CV, minor improvements only
+- 60-79: Good foundation, clear gaps to fix
+- 40-59: Significant issues affecting both readability and discoverability
+- 0-39: Needs substantial rework before sending to employers"""
 
 
 def _strip_fences(text: str) -> str:
@@ -163,4 +249,14 @@ async def tailor_cv(
         messages=[{"role": "user", "content": prompt}]
     )
 
+    return response.content[0].text.strip()
+
+
+async def tailor_cv_general(cv: str) -> str:
+    prompt = TAILOR_GENERAL_PROMPT.replace("__CV__", cv)
+    response = await client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=2500,
+        messages=[{"role": "user", "content": prompt}],
+    )
     return response.content[0].text.strip()

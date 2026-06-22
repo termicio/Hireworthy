@@ -7,9 +7,10 @@ import { uploadPDF } from "@/lib/api";
 interface Props {
   value: string;
   onChange: (v: string) => void;
+  minHeight?: number;
 }
 
-const inputStyle: React.CSSProperties = {
+const baseInputStyle: React.CSSProperties = {
   background: "#111111",
   border: "1px solid #222222",
   color: "#F5F5F5",
@@ -18,12 +19,11 @@ const inputStyle: React.CSSProperties = {
   resize: "none",
   outline: "none",
   width: "100%",
-  height: "240px",
   fontFamily: "monospace",
   lineHeight: 1.6,
 };
 
-export default function CvInput({ value, onChange }: Props) {
+export default function CvInput({ value, onChange, minHeight = 280 }: Props) {
   const [mode, setMode] = useState<"text" | "pdf">("text");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +96,7 @@ export default function CvInput({ value, onChange }: Props) {
     ...toggleBtnBase,
     background: "transparent",
     color: "#666666",
+    border: "1px solid #444444",
   };
 
   return (
@@ -116,10 +117,13 @@ export default function CvInput({ value, onChange }: Props) {
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Paste your CV here…"
-            style={inputStyle}
+            style={{ ...baseInputStyle, minHeight: `${minHeight}px` }}
             onFocus={(e) => (e.currentTarget.style.borderColor = "#E8FF00")}
             onBlur={(e) => (e.currentTarget.style.borderColor = "#222222")}
           />
+          <p style={{ fontSize: "0.75rem", color: "#666666", marginTop: "8px" }}>
+            {value.trim() === "" ? "0" : value.trim().split(/\s+/).length} words
+          </p>
           {filename && (
             <p style={{ fontSize: "0.7rem", color: "#666666" }}>
               Loaded: {filename}{" "}
@@ -142,7 +146,7 @@ export default function CvInput({ value, onChange }: Props) {
             style={{
               background: "#1e293b",
               border: `2px dashed ${isDragging ? "#E8FF00" : "#334155"}`,
-              height: "240px",
+              minHeight: `${minHeight}px`,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",

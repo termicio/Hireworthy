@@ -117,6 +117,13 @@ export async function tailorCV(req: {
   return request<TailorResult>("/tailor/", { method: "POST", body: JSON.stringify(req) });
 }
 
+export async function tailorCVGeneral(cv: string): Promise<TailorResult> {
+  return request<TailorResult>("/tailor/general", {
+    method: "POST",
+    body: JSON.stringify({ cv }),
+  });
+}
+
 // --- PDF Generate ---
 
 export type PDFLayout = "classic" | "modern" | "split";

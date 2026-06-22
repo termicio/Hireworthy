@@ -37,6 +37,10 @@ class TailorRequest(BaseModel):
     suggestions: list[str] = []
 
 
+class TailorGeneralRequest(BaseModel):
+    cv: str
+
+
 class TailorResponse(BaseModel):
     tailored_cv: str
 

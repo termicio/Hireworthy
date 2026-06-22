@@ -111,6 +111,9 @@
 
 
 
+/* ── Landing page ─────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
 /* ── Table row hover accent ───────────────────────────────── */
 .accent-row {
   border-left: 2px solid transparent;
@@ -122,6 +125,7 @@
 
 /* ── Mobile bottom nav ────────────────────────────────────── */
 @media (max-width: 640px) {
+  main { margin-left: 0 !important; }
   .sidebar-shell {
     position: fixed;
     bottom: 0;

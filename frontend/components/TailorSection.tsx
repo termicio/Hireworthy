@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { tailorCV } from "@/lib/api";
+import { tailorCV, tailorCVGeneral } from "@/lib/api";
 import PdfExportSection from "@/components/PdfExportSection";
 
 interface Props {
@@ -10,29 +10,46 @@ interface Props {
   jobDescription: string;
   missingKeywords: string[];
   suggestions: string[];
+  mode?: "general" | "targeted";
 }
 
-export default function TailorSection({ cv, jobDescription, missingKeywords, suggestions }: Props) {
+export default function TailorSection({ cv, jobDescription, missingKeywords, suggestions, mode = "targeted" }: Props) {
   const [tailoring, setTailoring] = useState(false);
   const [tailoredCv, setTailoredCv] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const buttonLabel = mode === "general" ? "FIX & OPTIMISE CV →" : "Tailor CV →";
+  const subtext =
+    mode === "general"
+      ? "Rewrites your CV for ATS compatibility and stronger bullet points."
+      : "Rewrites your bullet points to match this role — without inventing experience.";
+
   async function handleTailor() {
-    if (!cv.trim() || !jobDescription.trim()) {
-      setError("CV and job description are required.");
-      return;
+    if (mode === "general") {
+      if (!cv.trim()) {
+        setError("CV is required.");
+        return;
+      }
+    } else {
+      if (!cv.trim() || !jobDescription.trim()) {
+        setError("CV and job description are required.");
+        return;
+      }
     }
     setTailoring(true);
     setError(null);
     setTailoredCv(null);
     try {
-      const result = await tailorCV({
-        cv,
-        job_description: jobDescription,
-        missing_keywords: missingKeywords,
-        suggestions,
-      });
+      const result =
+        mode === "general"
+          ? await tailorCVGeneral(cv)
+          : await tailorCV({
+              cv,
+              job_description: jobDescription,
+              missing_keywords: missingKeywords,
+              suggestions,
+            });
       setTailoredCv(result.tailored_cv);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Tailoring failed.");
@@ -75,7 +92,7 @@ export default function TailorSection({ cv, jobDescription, missingKeywords, sug
           Auto-Tailor Your CV
         </p>
         <p style={{ fontSize: "0.8rem", color: "#999999" }}>
-          Rewrites your bullet points to match this role — without inventing experience.
+          {subtext}
         </p>
       </div>
 
@@ -92,7 +109,7 @@ export default function TailorSection({ cv, jobDescription, missingKeywords, sug
         }}
       >
         {tailoring && <Loader2 size={15} className="animate-spin" />}
-        {tailoring ? "Rewriting your CV…" : "Tailor CV →"}
+        {tailoring ? "Rewriting your CV…" : buttonLabel}
       </button>
 
       {error && <p style={{ color: "#FF3D00", fontSize: "0.8rem" }}>{error}</p>}

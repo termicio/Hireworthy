@@ -5,7 +5,7 @@ import type { ApplicationStatus } from "@/lib/api";
 const STATUS_ORDER: ApplicationStatus[] = ["applied", "interview", "offer", "rejected"];
 
 const STATUS_STYLES: Record<ApplicationStatus, React.CSSProperties> = {
-  applied:   { background: "#1a1a1a", color: "#666666", border: "1px solid #444444" },
+  applied:   { background: "#1a1a1a", color: "#999999", border: "1px solid #444444" },
   interview: { background: "#E8FF00", color: "#080808", border: "1px solid #E8FF00" },
   offer:     { background: "#00FF88", color: "#080808", border: "1px solid #00FF88" },
   rejected:  { background: "#FF3D00", color: "#080808", border: "1px solid #FF3D00" },

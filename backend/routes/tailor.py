@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 import ai
-from models import TailorRequest, TailorResponse
+from models import TailorRequest, TailorResponse, TailorGeneralRequest
 
 router = APIRouter()
 
@@ -12,6 +12,15 @@ async def tailor(req: TailorRequest) -> TailorResponse:
         tailored = await ai.tailor_cv(
             req.cv, req.job_description, req.missing_keywords, req.suggestions
         )
+    except Exception:
+        raise HTTPException(status_code=502, detail="AI tailoring failed")
+    return TailorResponse(tailored_cv=tailored)
+
+
+@router.post("/general", response_model=TailorResponse)
+async def tailor_general(req: TailorGeneralRequest) -> TailorResponse:
+    try:
+        tailored = await ai.tailor_cv_general(req.cv)
     except Exception:
         raise HTTPException(status_code=502, detail="AI tailoring failed")
     return TailorResponse(tailored_cv=tailored)

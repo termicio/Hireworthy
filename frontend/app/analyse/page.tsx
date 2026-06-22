@@ -17,7 +17,7 @@ const inputStyle: React.CSSProperties = {
   resize: "none",
   outline: "none",
   width: "100%",
-  height: "240px",
+  minHeight: "240px",
   fontFamily: "monospace",
   lineHeight: 1.6,
 };
@@ -40,7 +40,7 @@ export default function AnalysePage() {
   }
 
   return (
-    <div className="flex flex-col gap-10 max-w-4xl">
+    <div className="flex flex-col gap-10 max-w-4xl mx-auto">
       {/* Heading */}
       <div>
         <p className="uppercase tracking-widest font-medium mb-2" style={{ fontSize: "0.65rem", color: "#666666" }}>
@@ -55,17 +55,17 @@ export default function AnalysePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
           <label
-            className="uppercase tracking-widest font-medium"
-            style={{ fontSize: "0.65rem", color: "#666666" }}
+            className="uppercase tracking-widest font-bold"
+            style={{ fontSize: "0.65rem", color: "#F5F5F5" }}
           >
             Your CV
           </label>
-          <CvInput value={cv} onChange={setCv} />
+          <CvInput value={cv} onChange={setCv} minHeight={240} />
         </div>
         <div className="flex flex-col gap-2">
           <label
-            className="uppercase tracking-widest font-medium"
-            style={{ fontSize: "0.65rem", color: "#666666" }}
+            className="uppercase tracking-widest font-bold"
+            style={{ fontSize: "0.65rem", color: "#F5F5F5" }}
           >
             Job Description
           </label>
@@ -85,12 +85,12 @@ export default function AnalysePage() {
       {/* CTA */}
       <button
         onClick={handleAnalyse}
-        disabled={loading}
+        disabled={loading || !(cv.trim().length > 0 && jd.trim().length > 0)}
         className="flex items-center justify-center gap-2 w-full py-4 uppercase tracking-widest font-display font-bold text-sm transition-opacity"
         style={{
-          background: loading ? "#b3c700" : "#E8FF00",
-          color: "#080808",
-          cursor: loading ? "not-allowed" : "pointer",
+          background: loading ? "#b3c700" : (!(cv.trim().length > 0 && jd.trim().length > 0) ? "#1a1a1a" : "#E8FF00"),
+          color: !(cv.trim().length > 0 && jd.trim().length > 0) && !loading ? "#444444" : "#080808",
+          cursor: loading || !(cv.trim().length > 0 && jd.trim().length > 0) ? "not-allowed" : "pointer",
           letterSpacing: "0.1em",
         }}
       >

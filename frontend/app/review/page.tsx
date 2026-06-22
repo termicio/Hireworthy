@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import CvInput from "@/components/CvInput";
 import ReviewResultComponent from "@/components/ReviewResult";
 import PdfExportSection from "@/components/PdfExportSection";
+import TailorSection from "@/components/TailorSection";
 import { reviewCV, type ReviewResult } from "@/lib/api";
 
 export default function ReviewPage() {
@@ -49,8 +50,8 @@ export default function ReviewPage() {
         onClick={handleAnalyse}
         disabled={cv.trim().length < 50 || loading}
         style={{
-          background: cv.trim().length < 50 || loading ? "#333333" : "#E8FF00",
-          color: cv.trim().length < 50 || loading ? "#666666" : "#080808",
+          background: cv.trim().length < 50 || loading ? "#1a1a1a" : "#E8FF00",
+          color: cv.trim().length < 50 || loading ? "#444444" : "#080808",
           border: "none",
           padding: "1rem",
           width: "100%",
@@ -78,6 +79,15 @@ export default function ReviewPage() {
 
       {result !== null && <ReviewResultComponent result={result} />}
       {result !== null && <PdfExportSection cvText={cv} />}
+      {result !== null && (
+        <TailorSection
+          cv={cv}
+          mode="general"
+          jobDescription=""
+          missingKeywords={[]}
+          suggestions={[]}
+        />
+      )}
     </div>
   );
 }
