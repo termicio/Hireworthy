@@ -4,6 +4,7 @@ import re
 from fastapi import APIRouter, File, HTTPException, Response, UploadFile
 import pdfplumber
 
+from ai import clean_cv_text_ai
 from models import PDFGenerateRequest, PdfExtractResponse
 from pdf_templates import build_html
 
@@ -142,7 +143,8 @@ async def extract_pdf(file: UploadFile = File(...)) -> PdfExtractResponse:
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return PdfExtractResponse(text=text)
+    cleaned = await clean_cv_text_ai(text)
+    return PdfExtractResponse(text=cleaned)
 
 
 @router.post("/generate")

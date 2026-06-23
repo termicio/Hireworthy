@@ -142,10 +142,12 @@ export default function CVPreview({ cvText, layout, color }: Props) {
       <div style={{
         width: Math.round(W * SCALE),
         height: Math.round(H * SCALE),
-        overflow: "hidden",
+        overflow: "visible",
         border: "1px solid #222222",
         background: "#f5f5f5",
         position: "relative",
+        willChange: "transform",
+        isolation: "isolate",
       }}>
         <iframe
           srcDoc={html}
@@ -158,6 +160,11 @@ export default function CVPreview({ cvText, layout, color }: Props) {
             transformOrigin: "top left",
             border: "none",
             display: "block",
+            willChange: "transform",
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+            WebkitFontSmoothing: "antialiased",
+            imageRendering: "crisp-edges",
           }}
         />
       </div>

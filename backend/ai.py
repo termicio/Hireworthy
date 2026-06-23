@@ -260,3 +260,71 @@ async def tailor_cv_general(cv: str) -> str:
         messages=[{"role": "user", "content": prompt}],
     )
     return response.content[0].text.strip()
+
+
+CV_CLEAN_PROMPT = """You are a CV text cleaner. You receive raw text extracted from a PDF.
+Your ONLY job is to fix extraction artifacts — do not rewrite, improve, or summarise anything.
+
+Fix ONLY these specific issues:
+
+1. Merged or split words from line breaks:
+   "Soft-\\nware Engineer" → "Software Engineer"
+   "Pythonand SQL" → "Python and SQL"
+
+2. Spaced-out characters in headers:
+   "E D U C A T I O N" → "EDUCATION"
+   "W O R K E X P E R I E N C E" → "WORK EXPERIENCE"
+
+3. Bullet points split across lines — rejoin them into single lines:
+   "Developed a machine learning\\nmodel for medical imaging"
+   → "Developed a machine learning model for medical imaging"
+
+4. PDF artifacts: random isolated characters, page numbers appearing mid-text,
+   repeated headers/footers, watermarks
+
+5. Contact info that got merged:
+   "john@email.com790 690 377" → "john@email.com\\n790 690 377"
+
+6. Section headers that lost their formatting and merged with content:
+   "EDUCATIONLodz University" → "EDUCATION\\nLodz University"
+
+RULES:
+- Preserve ALL original content — every word, date, company name, skill
+- Do not rewrite bullet points or improve language
+- Do not add or remove any information
+- Do not change the structure or order of sections
+- Return ONLY the cleaned CV text, nothing else, no explanations
+
+Raw CV text to clean:
+__CV__"""
+
+
+async def clean_cv_text_ai(raw_text: str) -> str:
+    """
+    Fast cleaning pass using claude-haiku-4-5 before main analysis.
+    Fixes PDF extraction artifacts without modifying content.
+
+    Why Haiku: cleaning is pattern-matching, not reasoning — cheapest model suffices.
+    Why 50% safety check: prevents accidental summarisation (if model misbehaves,
+      returning dramatically shorter text means content was lost — fall back to original).
+    Why we clean pasted text too: users paste from Word/Google Docs which introduce
+      their own artifacts (smart quotes, invisible chars, broken line breaks).
+    """
+    if len(raw_text.strip()) < 100:
+        return raw_text
+
+    prompt = CV_CLEAN_PROMPT.replace("__CV__", raw_text)
+
+    response = await client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    cleaned = response.content[0].text.strip()
+
+    # If cleaned text is >50% shorter than original, something went wrong — return original
+    if len(cleaned) < len(raw_text) * 0.5:
+        return raw_text
+
+    return cleaned

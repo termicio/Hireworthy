@@ -14,6 +14,7 @@ async def review(request: ReviewRequest) -> ReviewResponse:
     if len(cv) > 30_000:
         raise HTTPException(status_code=400, detail="CV is too long (max 30 000 characters).")
     try:
-        return await ai.review_cv(cv)
+        cleaned_cv = await ai.clean_cv_text_ai(cv)
+        return await ai.review_cv(cleaned_cv)
     except Exception:
         raise HTTPException(status_code=500, detail="Review failed. Please try again.")

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from models import AnalyseRequest, AnalyseResponse
-from ai import analyse_cv
+from ai import analyse_cv, clean_cv_text_ai
 
 router = APIRouter()
 
@@ -13,7 +13,8 @@ async def analyse(request: AnalyseRequest):
         raise HTTPException(status_code=400, detail="Job description is too short.")
 
     try:
-        result = await analyse_cv(request.cv, request.job_description)
+        cleaned_cv = await clean_cv_text_ai(request.cv)
+        result = await analyse_cv(cleaned_cv, request.job_description)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
