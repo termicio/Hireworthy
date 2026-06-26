@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
 import CvInput from "@/components/CvInput";
+import SkeletonReview from "@/components/SkeletonReview";
+import TopProgressBar from "@/components/TopProgressBar";
 import ReviewResultComponent from "@/components/ReviewResult";
 import TailorSection from "@/components/TailorSection";
 import { reviewCV } from "@/lib/api";
@@ -35,11 +36,17 @@ export default function ReviewPage() {
     }
   }
 
+  const isDisabled = cvText.trim().length < 50;
+
   return (
     <div style={{ padding: "2rem 1rem" }}>
+      <TopProgressBar loading={loading} />
+
+      {/* Skeleton — visible while loading */}
+      {loading && <SkeletonReview />}
 
       {/* ── BEFORE RESULTS: centered single-column ── */}
-      {reviewResult === null && (
+      {reviewResult === null && !loading && (
         <div style={{ maxWidth: "760px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
           <div>
             <p style={{ fontSize: "0.65rem", letterSpacing: "0.2em", color: "#666666", textTransform: "uppercase", marginBottom: "0.5rem" }}>
@@ -79,21 +86,17 @@ export default function ReviewPage() {
 
           <button
             onClick={handleAnalyse}
-            disabled={cvText.trim().length < 50 || loading}
+            disabled={isDisabled || loading}
             style={{
-              background: cvText.trim().length < 50 || loading ? "#1a1a1a" : "#E8FF00",
-              color: cvText.trim().length < 50 || loading ? "#444444" : "#080808",
+              background: isDisabled ? "#1a1a1a" : "#E8FF00",
+              color: isDisabled ? "#444444" : "#080808",
               border: "none", padding: "1rem", width: "100%",
-              cursor: cvText.trim().length < 50 || loading ? "not-allowed" : "pointer",
+              cursor: isDisabled ? "not-allowed" : "pointer",
               fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.15em",
               textTransform: "uppercase", fontFamily: "inherit",
             }}
           >
-            {loading ? (
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
-                <Loader2 size={15} className="animate-spin" /> Analysing…
-              </span>
-            ) : "Analyse CV →"}
+            {"Analyse CV →"}
           </button>
         </div>
       )}

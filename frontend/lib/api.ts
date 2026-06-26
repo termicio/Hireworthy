@@ -145,20 +145,3 @@ export async function tailorCVGeneral(cv: string): Promise<TailorResult> {
 // --- PDF Generate ---
 
 export type PDFLayout = "classic" | "modern" | "split";
-
-export async function generatePDF(req: {
-  cv_text: string;
-  layout: PDFLayout;
-  color: string | null;
-}): Promise<Blob> {
-  const res = await fetch(`${API_URL}/pdf/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "PDF generation failed" }));
-    throw new Error((err as { detail?: string }).detail ?? "PDF generation failed");
-  }
-  return res.blob();
-}

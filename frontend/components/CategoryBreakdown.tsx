@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "framer-motion";
 import type { HealthCategory, MatchCategory } from "@/lib/api";
 
 interface Props {
@@ -10,14 +11,23 @@ function barColor(score: number): string {
   return "#00FF88";
 }
 
+const cardSpring = { type: "spring", stiffness: 400, damping: 30 } as const;
+
 export default function CategoryBreakdown({ categories }: Props) {
   return (
+    <AnimatePresence>
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      {categories.map((cat) => {
+      {categories.map((cat, index) => {
         const color = barColor(cat.score);
         return (
-          <div
+          <motion.div
             key={cat.name}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ x: 3 }}
+            transition={{ duration: 0.5, delay: index * 0.1, ...cardSpring }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#E8FF00")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222222")}
             style={{ background: "#111111", border: "1px solid #222222", padding: "0.875rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}
           >
             {/* Label + score */}
@@ -25,7 +35,7 @@ export default function CategoryBreakdown({ categories }: Props) {
               <p style={{ fontSize: "0.6rem", letterSpacing: "0.15em", color: "#666666", textTransform: "uppercase", fontWeight: 500 }}>
                 {cat.label}
               </p>
-              <span style={{ fontSize: "1rem", fontWeight: 700, color, fontFamily: "monospace" }}>{Math.round(cat.score)}</span>
+              <span style={{ fontSize: "1rem", fontWeight: 700, color, fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>{Math.round(cat.score)}</span>
             </div>
             {/* Progress bar */}
             <div style={{ width: "100%", background: "#222222", height: "4px" }}>
@@ -55,9 +65,10 @@ export default function CategoryBreakdown({ categories }: Props) {
                 ))}
               </div>
             )}
-          </div>
+          </motion.div>
         );
       })}
     </div>
+    </AnimatePresence>
   );
 }

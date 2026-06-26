@@ -6,8 +6,11 @@ import MatchScore from "@/components/MatchScore";
 import SaveApplicationModal from "@/components/SaveApplicationModal";
 import CvInput from "@/components/CvInput";
 import TailorSection from "@/components/TailorSection";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import { motion } from "framer-motion";
 import CategoryBreakdown from "@/components/CategoryBreakdown";
+import SkeletonAnalyse from "@/components/SkeletonAnalyse";
+import TopProgressBar from "@/components/TopProgressBar";
 import { useCVContext } from "@/lib/cv-context";
 
 const inputStyle: React.CSSProperties = {
@@ -48,13 +51,17 @@ export default function AnalysePage() {
     }
   }
 
+  const isDisabled = !(cvText.trim().length > 0 && jobDescription.trim().length > 0);
+  const sectionHeadingStyle: React.CSSProperties = { fontSize: "0.65rem", color: "#666666" };
+
   return (
     <div>
+      <TopProgressBar loading={loading} />
       {/* ── BEFORE RESULTS: centered single-column ── */}
       <div className="flex flex-col gap-10 max-w-4xl mx-auto">
       {/* Heading */}
       <div>
-        <p className="uppercase tracking-widest font-medium mb-2" style={{ fontSize: "0.65rem", color: "#666666" }}>
+        <p className="uppercase tracking-widest font-medium mb-2" style={sectionHeadingStyle}>
           AI Analysis
         </p>
         <h1 className="font-display font-bold uppercase leading-none" style={{ fontSize: "3rem", color: "#F5F5F5" }}>
@@ -87,8 +94,11 @@ export default function AnalysePage() {
         </div>
       )}
 
-      {/* Form — visible when no results */}
-      {analyseResult === null && (
+      {/* Skeleton — visible while loading */}
+      {loading && <SkeletonAnalyse />}
+
+      {/* Form — visible when no results and not loading */}
+      {analyseResult === null && !loading && (
         <>
           {/* Two-column inputs */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -126,17 +136,16 @@ export default function AnalysePage() {
           {/* CTA */}
           <button
             onClick={handleAnalyse}
-            disabled={loading || !(cvText.trim().length > 0 && jobDescription.trim().length > 0)}
+            disabled={isDisabled || loading}
             className="flex items-center justify-center gap-2 w-full py-4 uppercase tracking-widest font-display font-bold text-sm transition-opacity"
             style={{
-              background: loading ? "#b3c700" : (!(cvText.trim().length > 0 && jobDescription.trim().length > 0) ? "#1a1a1a" : "#E8FF00"),
-              color: !(cvText.trim().length > 0 && jobDescription.trim().length > 0) && !loading ? "#444444" : "#080808",
-              cursor: loading || !(cvText.trim().length > 0 && jobDescription.trim().length > 0) ? "not-allowed" : "pointer",
+              background: isDisabled ? "#1a1a1a" : "#E8FF00",
+              color: isDisabled ? "#444444" : "#080808",
+              cursor: isDisabled ? "not-allowed" : "pointer",
               letterSpacing: "0.1em",
             }}
           >
-            {loading && <Loader2 size={15} className="animate-spin" />}
-            {loading ? "Analysing…" : "Analyse →"}
+            {"Analyse →"}
           </button>
         </>
       )}
@@ -157,7 +166,7 @@ export default function AnalysePage() {
             {/* Keywords */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <p className="uppercase tracking-widest font-medium mb-3" style={{ fontSize: "0.65rem", color: "#666666" }}>
+                <p className="uppercase tracking-widest font-medium mb-3" style={sectionHeadingStyle}>
                   Matched Keywords
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -179,7 +188,7 @@ export default function AnalysePage() {
                 </div>
               </div>
               <div>
-                <p className="uppercase tracking-widest font-medium mb-3" style={{ fontSize: "0.65rem", color: "#666666" }}>
+                <p className="uppercase tracking-widest font-medium mb-3" style={sectionHeadingStyle}>
                   Missing Keywords
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -204,17 +213,19 @@ export default function AnalysePage() {
 
             {/* Suggestions */}
             <div>
-              <p className="uppercase tracking-widest font-medium mb-4" style={{ fontSize: "0.65rem", color: "#666666" }}>
+              <p className="uppercase tracking-widest font-medium mb-4" style={sectionHeadingStyle}>
                 Suggestions
               </p>
               <div className="flex flex-col gap-0" style={{ borderTop: "1px solid #222222" }}>
                 {analyseResult.suggestions.map((s, i) => (
-                  <div
+                  <motion.div
                     key={i}
                     className="flex gap-5 py-5"
                     style={{ borderBottom: "1px solid #222222", borderLeft: "2px solid #222222", paddingLeft: "20px" }}
                     onMouseEnter={(e) => (e.currentTarget.style.borderLeftColor = "#E8FF00")}
                     onMouseLeave={(e) => (e.currentTarget.style.borderLeftColor = "#222222")}
+                    whileHover={{ x: 6 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
                   >
                     <span
                       className="font-mono font-bold tabular shrink-0 mt-0.5"
@@ -223,14 +234,14 @@ export default function AnalysePage() {
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <p className="text-sm leading-relaxed" style={{ color: "#F5F5F5" }}>{s}</p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
 
             {/* Summary */}
             <div>
-              <p className="uppercase tracking-widest font-medium mb-3" style={{ fontSize: "0.65rem", color: "#666666" }}>
+              <p className="uppercase tracking-widest font-medium mb-3" style={sectionHeadingStyle}>
                 Summary
               </p>
               <p className="text-sm leading-relaxed" style={{ color: "#999999" }}>{analyseResult.explanation}</p>
