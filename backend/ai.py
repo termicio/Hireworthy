@@ -4,9 +4,23 @@ load_dotenv()
 
 import anthropic
 import json
-from models import AnalyseResponse, ReviewResponse
+from models import AnalyseResponse, CVHealthResponse, MatchCategory, HealthCategory
 
 client = anthropic.AsyncAnthropic()
+
+HEALTH_CATEGORIES = {
+    "clarity":          {"label": "Clarity",          "weight": 0.25},
+    "completeness":     {"label": "Completeness",     "weight": 0.25},
+    "impact_language":  {"label": "Impact Language",  "weight": 0.30},
+    "ats_friendliness": {"label": "ATS Friendliness", "weight": 0.20},
+}
+
+MATCH_CATEGORIES = {
+    "skills_match":         {"label": "Skills Match",         "weight": 0.35},
+    "experience_relevance": {"label": "Experience Relevance", "weight": 0.30},
+    "seniority_fit":        {"label": "Seniority Fit",        "weight": 0.20},
+    "education_fit":        {"label": "Education Fit",        "weight": 0.15},
+}
 
 ANALYSIS_PROMPT = """You are an expert technical recruiter with 10+ years of experience reviewing CVs.
 
@@ -18,26 +32,42 @@ __CV__
 Job Description:
 __JD__
 
-Respond ONLY with a valid JSON object — no preamble, no markdown, no backticks. Use this exact structure:
-{
-  "match_score": <integer 0-100>,
-  "matched_keywords": [<skills/keywords present in both CV and JD>],
-  "missing_keywords": [<important skills/keywords in JD but absent from CV>],
-  "suggestions": [
-    "<specific, actionable CV improvement 1>",
-    "<specific, actionable CV improvement 2>",
-    "<specific, actionable CV improvement 3>"
-  ],
-  "summary": "<2-sentence plain English summary of the match>"
-}
+Evaluate the fit across exactly these 4 categories (use these exact name values):
+- "skills_match": Do the candidate's technical skills, tools, and technologies match what the job requires?
+- "experience_relevance": Is the candidate's work experience relevant to this role and industry?
+- "seniority_fit": Does the candidate's level of experience match the seniority the job requires?
+- "education_fit": Does the candidate's education background match job requirements or preferences?
+
+For each category provide:
+- "score": integer 0-100
+- "evidence": one sentence citing specific CV content vs JD requirements
+- "missing_keywords": list of keywords/skills from THIS category that are missing from the CV (may be empty)
+
+Also provide:
+- "matched_keywords": skills/keywords present in both CV and JD
+- "missing_keywords" (top-level): all important keywords from JD absent from CV (union of per-category)
+- "suggestions": exactly 3 specific, actionable CV improvements referencing actual CV/JD content
+- "explanation": 2-3 sentence plain English summary of the overall fit
 
 Scoring guide:
-- 80-100: Strong match, most key requirements met
-- 60-79: Good match, a few gaps
+- 80-100: Strong match, requirement clearly met
+- 60-79: Good match, minor gaps
 - 40-59: Partial match, notable gaps
-- 0-39: Weak match, significant skills missing
+- 0-39: Weak match, significant gaps
 
-Be specific in suggestions — reference actual content from the CV and JD, not generic advice."""
+Respond ONLY with valid JSON — no preamble, no markdown, no backticks. Use exactly these 4 category names, in this order:
+{
+  "categories": [
+    {"name": "skills_match", "score": <int>, "evidence": "<one sentence>", "missing_keywords": [...]},
+    {"name": "experience_relevance", "score": <int>, "evidence": "<one sentence>", "missing_keywords": []},
+    {"name": "seniority_fit", "score": <int>, "evidence": "<one sentence>", "missing_keywords": []},
+    {"name": "education_fit", "score": <int>, "evidence": "<one sentence>", "missing_keywords": []}
+  ],
+  "matched_keywords": [...],
+  "missing_keywords": [...],
+  "suggestions": ["<specific improvement 1>", "<specific improvement 2>", "<specific improvement 3>"],
+  "explanation": "<2-3 sentence summary>"
+}"""
 
 TAILOR_PROMPT = """You are an expert CV writer who knows exactly how both
 humans and automated hiring systems evaluate CVs.
@@ -59,10 +89,20 @@ CATEGORY 2 — Human readability:
 - Ensure every bullet answers: what did you DO, and what was the RESULT
 
 CATEGORY 3 — Job match (keyword alignment):
-- Naturally incorporate these missing keywords from the job description: __MISSING_KEYWORDS__
-  Only add them where they genuinely fit existing experience — never fabricate
-- Address these recruiter suggestions: __SUGGESTIONS__
-- Mirror the language and terminology used in the job description where appropriate
+- Scan the original CV for existing experience, tools, or projects that RELATE to these missing keywords: __MISSING_KEYWORDS__
+  If a keyword genuinely maps to something already written in the original CV, use that terminology when rewriting that section.
+  If there is NO existing content that relates to a keyword — skip it entirely.
+- Address these recruiter suggestions ONLY by improving how existing experience is described — never by adding new experience: __SUGGESTIONS__
+- Mirror the language and terminology of the job description, but only within sections and content that already exist in the original CV.
+
+WHAT "NEVER FABRICATE" MEANS — CONCRETE RULES:
+- Do NOT add new projects that are not in the original CV
+- Do NOT add new companies or roles that are not in the original CV
+- Do NOT add skills or tools to the SKILLS section that are not in the original CV
+- Do NOT write phrases like "hands-on exploration of X", "actively developing knowledge of X", or "introductory experience with X" for any technology not mentioned in the original CV
+- If the original CV has 2 projects — the tailored CV must have exactly 2 projects
+- If the original CV has no AWS — the tailored CV must have no AWS
+- A keyword from MISSING_KEYWORDS that has no anchor in the original CV must not appear anywhere in the tailored CV
 
 Original CV:
 __CV__
@@ -71,9 +111,11 @@ Job Description:
 __JD__
 
 STRICT RULES:
-- Never invent experience, companies, dates, or qualifications not in the original
-- Only rewrite and restructure existing content
+- Never invent experience, companies, dates, qualifications, or technologies not present in the original CV
+- Only rewrite and restructure existing content — never add new content
 - Keep all contact information exactly as-is
+- The tailored CV must contain the same number of jobs and projects as the original
+- Before returning, mentally check: does every item in PROJECTS and EXPERIENCE exist in the original CV? If not, remove it.
 - Return ONLY the full rewritten CV text — no explanations, no preamble, no markdown fences
 - Write in the same language as the original CV"""
 
@@ -113,74 +155,78 @@ You review CVs knowing two things most candidates don't:
 
 1. Most CVs are first screened by automated systems before a human ever sees them.
    These systems struggle with: tables, multiple columns, images, unusual section headers,
-   non-standard date formats, and missing keywords from the job description.
+   non-standard date formats, and missing keywords.
 
 2. Human recruiters spend 6-10 seconds on a first pass. Clarity, specificity,
    and strong action verbs matter enormously.
 
-Your job is to give brutally honest feedback that addresses BOTH — but never use
-the word "ATS" or technical jargon in your output. Translate every technical issue
-into plain human advice about "reaching more recruiters" or "making it easier to find".
+Give brutally honest feedback — never use technical jargon, translate every issue into
+plain human advice about "reaching more recruiters" or "making it easier to find".
 
 CV to review:
 __CV__
 
 ---
 
-Evaluate across exactly these 5 sections (use these exact names):
-"Contact Info", "Summary/Objective", "Experience", "Skills", "Education"
+Evaluate across exactly these 4 categories (use these exact name values):
+- "clarity": Is the CV easy to read, well-structured, consistent formatting, clear dates?
+- "completeness": Does the CV have all essential sections (contact, summary, experience, education, skills)? Links, GitHub, portfolio?
+- "impact_language": Do bullets describe achievements and results, not just duties? Are there numbers and outcomes?
+- "ats_friendliness": Is the CV in a clean single-column format that automated systems can parse? No tables, columns, images?
 
-For each section score 0-100 and give ONE sentence explaining the score.
+For each category provide:
+- "score": integer 0-100
+- "evidence": one sentence with a specific observation from the CV
+- "tips": list of 1-3 concrete, specific fixes (empty list if no tips needed)
+
 When scoring, penalize:
-- Missing or hard-to-find contact info
-- Vague bullet points without numbers or outcomes
-- Skills listed without context (just a word dump)
-- Non-standard section names that systems might miss
-- Dates in inconsistent or ambiguous formats
+- clarity: inconsistent date formats, unclear section order, walls of text
+- completeness: missing contact info, no summary, no links when relevant
+- impact_language: bullets starting with "responsible for", no metrics, generic phrases like "team player"
+- ats_friendliness: multi-column layout, tables, images, creative section headers, non-standard formatting
 
-Identify exactly 3 of the weakest bullet points. For each:
-- "original": exact quote from the CV
-- "reason": why it is weak (too vague, no metric, passive voice, generic)
-- "rewritten": stronger version — do NOT invent facts not in the original
+Also provide:
+- "weak_bullets": exactly 3 of the weakest bullet points
+  Each: "original" (exact quote), "reason" (why weak), "rewritten" (stronger version — no invented facts)
+- "red_flags": list of issues (plain human advice, no technical jargon)
+  Check for: layout issues, no quantified achievements, employment gaps, generic filler phrases,
+  missing LinkedIn/GitHub, non-standard section headers, text dates ("two years"), CV > 2 pages for <5yr experience
+- "quick_wins": exactly 3 highest-impact fixes, ordered by impact, as specific actions
 
-Identify red flags. Check for:
-- Multi-column or table layout (translate as: "Your CV layout may not display correctly for all employers — a single-column format reaches more recruiters")
-- No quantified achievements anywhere
-- Gaps in employment dates
-- Generic filler phrases ("passionate about", "team player", "hard worker")
-- Missing LinkedIn or GitHub when relevant for the role
-- Section headers that are creative but non-standard (e.g. "My Journey" instead of "Experience")
-- Dates written as text instead of numbers ("two years" vs "2022-2024")
-- CV longer than 2 pages for under 5 years experience
-- Photo or personal info (age, marital status) that varies by country norms
-
-Identify exactly 3 quick wins — highest-impact fixes ordered by impact.
-Frame each as a specific action: "Add X to Y section" not "improve your skills section".
-
-Respond ONLY with valid JSON — no preamble, no markdown, no backticks:
+Respond ONLY with valid JSON — no preamble, no markdown, no backticks. Use exactly these 4 category names, in this order:
 {
-  "overall_score": <integer 0-100>,
-  "sections": [
-    {"name": "Contact Info", "score": <integer>, "comment": "<one sentence>"},
-    {"name": "Summary/Objective", "score": <integer>, "comment": "<one sentence>"},
-    {"name": "Experience", "score": <integer>, "comment": "<one sentence>"},
-    {"name": "Skills", "score": <integer>, "comment": "<one sentence>"},
-    {"name": "Education", "score": <integer>, "comment": "<one sentence>"}
+  "categories": [
+    {"name": "clarity", "score": <int>, "evidence": "<one sentence>", "tips": ["..."]},
+    {"name": "completeness", "score": <int>, "evidence": "<one sentence>", "tips": ["..."]},
+    {"name": "impact_language", "score": <int>, "evidence": "<one sentence>", "tips": ["..."]},
+    {"name": "ats_friendliness", "score": <int>, "evidence": "<one sentence>", "tips": []}
   ],
   "weak_bullets": [
     {"original": "<exact quote>", "reason": "<why weak>", "rewritten": "<stronger version>"},
     {"original": "<exact quote>", "reason": "<why weak>", "rewritten": "<stronger version>"},
     {"original": "<exact quote>", "reason": "<why weak>", "rewritten": "<stronger version>"}
   ],
-  "red_flags": ["<plain human advice, no ATS jargon>"],
+  "red_flags": ["<plain human advice>"],
   "quick_wins": ["<specific action 1>", "<specific action 2>", "<specific action 3>"]
 }
 
 Scoring guide:
-- 80-100: Strong CV, minor improvements only
-- 60-79: Good foundation, clear gaps to fix
-- 40-59: Significant issues affecting both readability and discoverability
-- 0-39: Needs substantial rework before sending to employers"""
+- 80-100: Strong, minor improvements only
+- 60-79: Good foundation, clear gaps
+- 40-59: Significant issues
+- 0-39: Needs substantial rework"""
+
+
+def _enrich(categories: list[dict], weights: dict) -> tuple[list[dict], int]:
+    enriched = []
+    for c in categories:
+        if c["name"] not in weights:
+            raise ValueError(f"Unexpected category name from LLM: {c['name']!r}")
+        meta = weights[c["name"]]
+        clamped_score = min(100.0, max(0.0, float(c["score"])))
+        enriched.append({**c, "score": clamped_score, "label": meta["label"], "weight": meta["weight"]})
+    overall = min(100, max(0, round(sum(c["score"] * weights[c["name"]]["weight"] for c in enriched))))
+    return enriched, overall
 
 
 def _strip_fences(text: str) -> str:
@@ -202,19 +248,30 @@ async def analyse_cv(cv: str, job_description: str) -> AnalyseResponse:
         .replace("__CV__", cv)
         .replace("__JD__", job_description)
     )
-
     response = await client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=1000,
+        max_tokens=1500,
         messages=[{"role": "user", "content": prompt}]
     )
-
     raw = _strip_fences(response.content[0].text)
-    data = json.loads(raw)
-    return AnalyseResponse(**data)
+    try:
+        data = json.loads(raw)
+        categories, overall_score = _enrich(data["categories"], MATCH_CATEGORIES)
+    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        import logging
+        logging.getLogger(__name__).error("analyse_cv parse error: %s\nRaw LLM output: %s", exc, raw)
+        raise
+    return AnalyseResponse(
+        overall_score=overall_score,
+        categories=categories,
+        matched_keywords=data.get("matched_keywords", []),
+        explanation=data["explanation"],
+        missing_keywords=data.get("missing_keywords", []),
+        suggestions=data.get("suggestions", []),
+    )
 
 
-async def review_cv(cv: str) -> ReviewResponse:
+async def review_cv(cv: str) -> CVHealthResponse:
     prompt = REVIEW_PROMPT.replace("__CV__", cv)
     response = await client.messages.create(
         model="claude-sonnet-4-6",
@@ -222,8 +279,20 @@ async def review_cv(cv: str) -> ReviewResponse:
         messages=[{"role": "user", "content": prompt}],
     )
     raw = _strip_fences(response.content[0].text)
-    data = json.loads(raw)
-    return ReviewResponse(**data)
+    try:
+        data = json.loads(raw)
+        categories, overall_score = _enrich(data["categories"], HEALTH_CATEGORIES)
+    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        import logging
+        logging.getLogger(__name__).error("review_cv parse error: %s\nRaw LLM output: %s", exc, raw)
+        raise
+    return CVHealthResponse(
+        overall_score=overall_score,
+        categories=categories,
+        weak_bullets=data.get("weak_bullets", []),
+        red_flags=data.get("red_flags", []),
+        quick_wins=data.get("quick_wins", []),
+    )
 
 
 async def tailor_cv(

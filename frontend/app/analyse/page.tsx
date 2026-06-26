@@ -7,6 +7,7 @@ import SaveApplicationModal from "@/components/SaveApplicationModal";
 import CvInput from "@/components/CvInput";
 import TailorSection from "@/components/TailorSection";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import CategoryBreakdown from "@/components/CategoryBreakdown";
 import { useCVContext } from "@/lib/cv-context";
 
 const inputStyle: React.CSSProperties = {
@@ -149,7 +150,8 @@ export default function AnalysePage() {
           <div className="lg:col-span-3 flex flex-col gap-8">
             {/* Score */}
             <div style={{ borderLeft: "2px solid #E8FF00", paddingLeft: "24px" }}>
-              <MatchScore score={analyseResult.match_score} />
+              <MatchScore score={analyseResult.overall_score} />
+              <CategoryBreakdown categories={analyseResult.categories} />
             </div>
 
             {/* Keywords */}
@@ -231,7 +233,7 @@ export default function AnalysePage() {
               <p className="uppercase tracking-widest font-medium mb-3" style={{ fontSize: "0.65rem", color: "#666666" }}>
                 Summary
               </p>
-              <p className="text-sm leading-relaxed" style={{ color: "#999999" }}>{analyseResult.summary}</p>
+              <p className="text-sm leading-relaxed" style={{ color: "#999999" }}>{analyseResult.explanation}</p>
             </div>
 
             {/* Save */}
@@ -255,19 +257,6 @@ export default function AnalysePage() {
 
           {/* RIGHT — sticky */}
           <div className="lg:col-span-2" style={{ position: "sticky", top: "24px", alignSelf: "start", display: "flex", flexDirection: "column", gap: "16px" }}>
-            {/* CV Preview */}
-            <div style={{ background: "#111111", border: "1px solid #222222", padding: "16px" }}>
-              <p style={{ fontSize: "0.6rem", color: "#666666", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "8px" }}>Your CV</p>
-              <p style={{ fontSize: "0.75rem", color: "#444444", lineHeight: 1.5, fontFamily: "monospace", whiteSpace: "pre-wrap", overflow: "hidden" }}>
-                {cvText.split("\n").slice(0, 3).join("\n")}
-              </p>
-              <button
-                onClick={clearAll}
-                style={{ marginTop: "12px", fontSize: "0.65rem", color: "#666666", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.1em", fontFamily: "inherit", textTransform: "uppercase" }}
-              >
-                EDIT CV ↓
-              </button>
-            </div>
             {/* TailorSection */}
             <TailorSection
               cv={cvText}
@@ -280,7 +269,7 @@ export default function AnalysePage() {
       )}
 
       <SaveApplicationModal
-        matchScore={analyseResult?.match_score ?? 0}
+        matchScore={analyseResult?.overall_score ?? 0}
         open={showModal}
         onClose={() => setShowModal(false)}
         onSaved={() => { setShowModal(false); setSaved(true); }}

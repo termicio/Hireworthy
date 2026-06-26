@@ -3,8 +3,8 @@ interface MatchScoreProps {
 }
 
 export default function MatchScore({ score }: MatchScoreProps) {
-  const color = score >= 70 ? "#00FF88" : score >= 50 ? "#E8FF00" : "#FF3D00";
-  const label = score >= 70 ? "Strong match" : score >= 50 ? "Partial match" : "Weak match";
+  const color = score >= 75 ? "#00FF88" : score >= 50 ? "#E8FF00" : "#FF3D00";
+  const label = score >= 75 ? "Strong match" : score >= 50 ? "Partial match" : "Weak match";
 
   return (
     <div className="flex flex-col gap-4 w-full">

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
 from datetime import datetime
 from enum import Enum
@@ -18,12 +18,31 @@ class AnalyseRequest(BaseModel):
     job_description: str
 
 
+class MatchCategory(BaseModel):
+    name: str
+    label: str
+    score: float = Field(ge=0, le=100)
+    weight: float
+    evidence: str
+    missing_keywords: List[str] = []
+
+
+class HealthCategory(BaseModel):
+    name: str
+    label: str
+    score: float = Field(ge=0, le=100)
+    weight: float
+    evidence: str
+    tips: List[str]
+
+
 class AnalyseResponse(BaseModel):
-    match_score: int                  # 0-100
-    matched_keywords: List[str]
+    overall_score: int = Field(ge=0, le=100)
+    categories: List[MatchCategory]
+    matched_keywords: List[str] = []
+    explanation: str
     missing_keywords: List[str]
-    suggestions: List[str]            # 3 concrete CV improvements
-    summary: str                      # 2-sentence plain-English summary
+    suggestions: List[str]
 
 
 class PdfExtractResponse(BaseModel):
@@ -70,12 +89,6 @@ class ApplicationOut(BaseModel):
     updated_at: datetime
 
 
-class SectionScore(BaseModel):
-    name: str
-    score: int
-    comment: str
-
-
 class WeakBullet(BaseModel):
     original: str
     reason: str
@@ -86,12 +99,15 @@ class ReviewRequest(BaseModel):
     cv: str
 
 
-class ReviewResponse(BaseModel):
-    overall_score: int
-    sections: list[SectionScore]
-    weak_bullets: list[WeakBullet]
-    red_flags: list[str]
-    quick_wins: list[str]
+class CVHealthResponse(BaseModel):
+    overall_score: int = Field(ge=0, le=100)
+    categories: List[HealthCategory]
+    weak_bullets: List[WeakBullet]
+    red_flags: List[str]
+    quick_wins: List[str]
+
+class ReviewResponse(CVHealthResponse):
+    pass
 
 
 import re as _re

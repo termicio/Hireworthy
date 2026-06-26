@@ -15,19 +15,37 @@ export interface Application {
   updated_at: string;
 }
 
-export interface AnalyseResult {
-  match_score: number;
-  matched_keywords: string[];
+export interface MatchCategory {
+  name: string;
+  label: string;
+  score: number;
+  weight: number;
+  evidence: string;
   missing_keywords: string[];
-  suggestions: string[];
-  summary: string;
 }
 
-export interface SectionScore { name: string; score: number; comment: string; }
+export interface AnalyseResult {
+  overall_score: number;
+  categories: MatchCategory[];
+  matched_keywords: string[];
+  explanation: string;
+  missing_keywords: string[];
+  suggestions: string[];
+}
+
+export interface HealthCategory {
+  name: string;
+  label: string;
+  score: number;
+  weight: number;
+  evidence: string;
+  tips: string[];
+}
+
 export interface WeakBullet { original: string; reason: string; rewritten: string; }
 export interface ReviewResult {
   overall_score: number;
-  sections: SectionScore[];
+  categories: HealthCategory[];
   weak_bullets: WeakBullet[];
   red_flags: string[];
   quick_wins: string[];

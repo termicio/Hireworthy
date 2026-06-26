@@ -1,13 +1,14 @@
 import { AlertTriangle, Zap } from "lucide-react";
 import type { ReviewResult } from "@/lib/api";
+import CategoryBreakdown from "@/components/CategoryBreakdown";
 
 interface Props {
   result: ReviewResult;
 }
 
 function scoreColor(score: number): string {
-  if (score < 40) return "#FF3D00";
-  if (score < 70) return "#E8FF00";
+  if (score < 50) return "#FF3D00";
+  if (score < 75) return "#E8FF00";
   return "#00FF88";
 }
 
@@ -37,29 +38,10 @@ export default function ReviewResult({ result }: Props) {
         </div>
       </div>
 
-      {/* B — Section Analysis */}
+      {/* B — CV Health Categories */}
       <div>
-        <p style={headingStyle}>Section Analysis</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {result.sections.map((section) => {
-            const sColor = scoreColor(section.score);
-            return (
-              <div
-                key={section.name}
-                style={{ background: "#111111", border: "1px solid #222222", padding: "0.875rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}
-              >
-                <p style={{ fontSize: "0.6rem", letterSpacing: "0.15em", color: "#666666", textTransform: "uppercase", fontWeight: 500 }}>
-                  {section.name}
-                </p>
-                <p style={{ fontSize: "1.5rem", fontWeight: 700, color: sColor, lineHeight: 1 }}>{section.score}</p>
-                <div style={{ width: "100%", background: "#222222", height: "4px" }}>
-                  <div style={{ width: `${section.score}%`, background: sColor, height: "100%" }} />
-                </div>
-                <p style={{ fontSize: "0.75rem", color: "#F5F5F5", lineHeight: 1.5 }}>{section.comment}</p>
-              </div>
-            );
-          })}
-        </div>
+        <p style={headingStyle}>CV Health Categories</p>
+        <CategoryBreakdown categories={result.categories} />
       </div>
 
       {/* C — Bullet Point Analysis */}
