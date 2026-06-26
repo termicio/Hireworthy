@@ -33,7 +33,7 @@ export default function Sidebar() {
       {/* Wordmark */}
       <Link
         href="/"
-        className="sidebar-logo flex items-center h-14 shrink-0"
+        className="sidebar-logo flex items-center h-20 shrink-0"
         style={{
           borderBottom: "1px solid #222222",
           justifyContent: expanded ? "flex-start" : "center",
@@ -43,14 +43,14 @@ export default function Sidebar() {
         {expanded ? (
           <span
             className="font-display font-bold uppercase whitespace-nowrap"
-            style={{ color: "#E8FF00", fontSize: "0.8rem", letterSpacing: "0.18em" }}
+            style={{ color: "#E8FF00", fontSize: "1.1rem", letterSpacing: "0.18em" }}
           >
             HIREWORTHY
           </span>
         ) : (
           <span
             className="font-display font-bold"
-            style={{ color: "#E8FF00", fontSize: "1.25rem" }}
+            style={{ color: "#E8FF00", fontSize: "2rem" }}
           >
             H
           </span>
@@ -66,7 +66,7 @@ export default function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                "sidebar-nav-link flex items-center gap-3 h-11 px-4 text-sm whitespace-nowrap transition-colors",
+                "sidebar-nav-link flex items-center gap-4 h-16 px-5 text-sm whitespace-nowrap transition-colors",
                 active
                   ? "text-[#E8FF00] bg-[#E8FF00]/5"
                   : "text-[#666666] hover:text-[#F5F5F5] hover:bg-[#1a1a1a]"
@@ -74,11 +74,11 @@ export default function Sidebar() {
               style={active ? { borderLeft: "2px solid #E8FF00" } : { borderLeft: "2px solid transparent" }}
             >
               <Icon
-                size={16}
+                size={24}
                 strokeWidth={active ? 2.2 : 1.6}
                 className="shrink-0"
               />
-              <span className={cn("sidebar-nav-label font-display text-[13px]", active ? "font-bold" : "font-medium")}>
+              <span className={cn("sidebar-nav-label font-display text-[15px]", active ? "font-bold" : "font-medium")}>
                 {label}
               </span>
             </Link>
@@ -88,7 +88,7 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="sidebar-footer px-4 py-4 border-t border-border">
-        <span className="text-[10px] text-[#444444] font-mono whitespace-nowrap">v1.0</span>
+        <span className="text-[13px] text-[#444444] font-mono whitespace-nowrap">v1.0</span>
       </div>
     </aside>
   );

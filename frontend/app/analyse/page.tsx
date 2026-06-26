@@ -216,7 +216,7 @@ export default function AnalysePage() {
               <p className="uppercase tracking-widest font-medium mb-4" style={sectionHeadingStyle}>
                 Suggestions
               </p>
-              <div className="flex flex-col gap-0" style={{ borderTop: "1px solid #222222" }}>
+              <div className="flex flex-col gap-0">
                 {analyseResult.suggestions.map((s, i) => (
                   <motion.div
                     key={i}

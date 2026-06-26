@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-screen bg-background text-foreground antialiased">
         <CVProvider>
           <Sidebar />
-          <main className="flex-1 p-8 overflow-auto min-h-screen" style={{ marginLeft: "56px" }}>{children}</main>
+          <main className="flex-1 p-8 overflow-auto min-h-screen" style={{ marginLeft: "72px" }}>{children}</main>
         </CVProvider>
       </body>
     </html>

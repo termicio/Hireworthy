@@ -98,7 +98,7 @@
 
 /* ── Hover-expand sidebar ─────────────────────────────────── */
 .sidebar-shell {
-  width: 56px;
+  width: 72px;
   transition: width 200ms ease;
   overflow: hidden;
 }
@@ -181,13 +181,13 @@ html { scroll-behavior: smooth; }
   pointer-events: none;
 }
 #nprogress .bar {
-  background: #E8FF00;
+  background: #E8FF00 !important;
   position: fixed;
   z-index: 99999;
   top: 0;
   left: 0;
   width: 100%;
-  height: 2px;
+  height: 2px !important;
 }
 #nprogress .peg {
   display: block;
@@ -195,9 +195,12 @@ html { scroll-behavior: smooth; }
   right: 0px;
   width: 100px;
   height: 100%;
-  box-shadow: 0 0 10px #E8FF00, 0 0 5px #E8FF00;
+  box-shadow: 0 0 10px #E8FF00, 0 0 5px #E8FF00 !important;
   opacity: 1;
   transform: rotate(3deg) translate(0px, -4px);
+}
+#nprogress .spinner {
+  display: none !important;
 }
 
 /* ── Noise texture overlay ────────────────────────────────── */

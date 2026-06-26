@@ -83,7 +83,7 @@ export default function TailorSection({ cv, jobDescription, missingKeywords, sug
   };
 
   return (
-    <div className="flex flex-col gap-4" style={{ borderTop: "1px solid #222222", paddingTop: "2rem" }}>
+    <div className="flex flex-col gap-4" style={{ paddingTop: "2rem" }}>
       <div>
         <p
           className="uppercase tracking-widest font-medium mb-1"

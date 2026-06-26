@@ -1,4 +1,5 @@
 "use client";
+import "nprogress/nprogress.css";
 import { useEffect } from "react";
 import NProgress from "nprogress";
 
