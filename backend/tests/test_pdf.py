@@ -1,239 +1,139 @@
 """Tests for POST /pdf/extract endpoint."""
 import io
-import pytest
 from unittest.mock import patch, MagicMock
+
+# Text used in happy-path mocks — must survive the >=50 chars validation
+# in _extract_text_from_pdf after cleaning.
+LONG_TEXT_1 = "Jan Kowalski, Python Developer with three years of FastAPI experience."
+LONG_TEXT_2 = "Built PostgreSQL-backed services, Docker deployments and pytest suites."
+
+PDF_HEADER = b"%PDF-1.4\n%mock content for tests"
+
+
+def _make_page(text: str | None) -> MagicMock:
+    """Page mock consistent with the real extraction path:
+    - bbox unpacks to 4 numbers,
+    - extract_words() spans the full width, so the column detector finds no
+      zero-density gap and falls back to plain extract_text().
+    """
+    page = MagicMock()
+    page.bbox = (0, 0, 612, 792)
+    if text is None:
+        page.extract_words.return_value = []
+    else:
+        page.extract_words.return_value = [{"x0": 0, "x1": 612}]
+    page.extract_text.return_value = text
+    return page
+
+
+def _mock_pdf(pages: list[MagicMock]) -> MagicMock:
+    pdf = MagicMock()
+    pdf.pages = pages
+    pdf.__enter__.return_value = pdf
+    pdf.__exit__.return_value = None
+    return pdf
+
+
+async def _ai_passthrough(text: str) -> str:
+    return text
+
+
+def _post_pdf(client, pages_or_side_effect, filename: str = "test.pdf"):
+    with patch("routes.pdf.clean_cv_text_ai", side_effect=_ai_passthrough), \
+         patch("pdfplumber.open") as mock_open:
+        if isinstance(pages_or_side_effect, Exception):
+            mock_open.side_effect = pages_or_side_effect
+        else:
+            mock_open.return_value = _mock_pdf(pages_or_side_effect)
+        return client.post(
+            "/pdf/extract",
+            files={"file": (filename, io.BytesIO(PDF_HEADER), "application/pdf")},
+        )
 
 
 def test_pdf_extract_valid_pdf(client):
-    """Test extracting text from a valid PDF file."""
-    # Minimal valid PDF with text layer
-    pdf_content = b"""%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
-endobj
-4 0 obj
-<< >>
-stream
-BT
-/F1 12 Tf
-100 700 Td
-(Hello World) Tj
-ET
-endstream
-endobj
-5 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
-endobj
-xref
-0 6
-0000000000 65535 f
-0000000009 00000 n
-0000000058 00000 n
-0000000115 00000 n
-0000000214 00000 n
-0000000320 00000 n
-trailer
-<< /Size 6 /Root 1 0 R >>
-startxref
-399
-%%EOF"""
-
-    with patch("pdfplumber.open") as mock_pdfplumber:
-        # Mock the PDF extraction
-        mock_pdf = MagicMock()
-        mock_page = MagicMock()
-        mock_page.extract_text.return_value = "Hello World"
-        mock_pdf.pages = [mock_page]
-        mock_pdf.__enter__.return_value = mock_pdf
-        mock_pdf.__exit__.return_value = None
-        mock_pdfplumber.return_value = mock_pdf
-
-        response = client.post(
-            "/pdf/extract",
-            files={"file": ("test.pdf", io.BytesIO(pdf_content), "application/pdf")}
-        )
-
+    """Extracting text from a valid single-page PDF returns 200 with the text."""
+    response = _post_pdf(client, [_make_page(LONG_TEXT_1)])
     assert response.status_code == 200
-    assert response.json() == {"text": "Hello World"}
+    assert LONG_TEXT_1 in response.json()["text"]
 
 
 def test_pdf_extract_non_pdf_file(client):
-    """Test that non-PDF files (e.g., plain text) are rejected."""
-    txt_content = b"This is just plain text, not a PDF"
-
+    """Non-PDF files (e.g., plain text) are rejected."""
     response = client.post(
         "/pdf/extract",
-        files={"file": ("test.txt", io.BytesIO(txt_content), "text/plain")}
+        files={"file": ("test.txt", io.BytesIO(b"just text"), "text/plain")},
     )
-
     assert response.status_code == 400
     assert "must be a PDF" in response.json()["detail"]
 
 
 def test_pdf_extract_fake_extension(client):
-    """Test that files with .pdf extension but non-PDF magic bytes are rejected."""
-    # Plain text with .pdf extension
-    fake_pdf_content = b"This is not actually a PDF file"
-
+    """Files with .pdf extension but non-PDF magic bytes are rejected."""
     response = client.post(
         "/pdf/extract",
-        files={"file": ("fake.pdf", io.BytesIO(fake_pdf_content), "application/pdf")}
+        files={"file": ("fake.pdf", io.BytesIO(b"not a pdf"), "application/pdf")},
     )
-
     assert response.status_code == 400
     assert "must be a PDF" in response.json()["detail"]
 
 
 def test_pdf_extract_file_too_large(client):
-    """Test that files larger than 5MB are rejected."""
-    # Create a file just over 5MB
+    """Files larger than 5MB are rejected."""
     large_content = b"%PDF" + b"x" * (5 * 1024 * 1024)
-
     response = client.post(
         "/pdf/extract",
-        files={"file": ("large.pdf", io.BytesIO(large_content), "application/pdf")}
+        files={"file": ("large.pdf", io.BytesIO(large_content), "application/pdf")},
     )
-
     assert response.status_code == 400
     assert "too large" in response.json()["detail"]
 
 
 def test_pdf_extract_no_text_layer(client):
-    """Test that PDFs with no extractable text are rejected."""
-    # Valid PDF header but no text content
-    pdf_content = b"""%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>
-endobj
-xref
-0 4
-0000000000 65535 f
-0000000009 00000 n
-0000000058 00000 n
-0000000115 00000 n
-trailer
-<< /Size 4 /Root 1 0 R >>
-startxref
-200
-%%EOF"""
-
-    with patch("pdfplumber.open") as mock_pdfplumber:
-        # Mock empty text extraction
-        mock_pdf = MagicMock()
-        mock_page = MagicMock()
-        mock_page.extract_text.return_value = None  # No text extracted
-        mock_pdf.pages = [mock_page]
-        mock_pdf.__enter__.return_value = mock_pdf
-        mock_pdf.__exit__.return_value = None
-        mock_pdfplumber.return_value = mock_pdf
-
-        response = client.post(
-            "/pdf/extract",
-            files={"file": ("notextpdf.pdf", io.BytesIO(pdf_content), "application/pdf")}
-        )
-
+    """PDFs with no extractable text (scans) are rejected with a helpful hint."""
+    response = _post_pdf(client, [_make_page(None)], filename="scan.pdf")
     assert response.status_code == 400
-    assert "Could not extract text" in response.json()["detail"]
+    assert "No text could be extracted" in response.json()["detail"]
 
 
 def test_pdf_extract_multiple_pages(client):
-    """Test that multi-page PDFs are handled correctly."""
-    pdf_content = b"%PDF-1.4" + b"..." # Minimal content
-
-    with patch("pdfplumber.open") as mock_pdfplumber:
-        # Mock multi-page PDF
-        mock_pdf = MagicMock()
-        mock_page1 = MagicMock()
-        mock_page1.extract_text.return_value = "Page 1 content"
-        mock_page2 = MagicMock()
-        mock_page2.extract_text.return_value = "Page 2 content"
-        mock_pdf.pages = [mock_page1, mock_page2]
-        mock_pdf.__enter__.return_value = mock_pdf
-        mock_pdf.__exit__.return_value = None
-        mock_pdfplumber.return_value = mock_pdf
-
-        response = client.post(
-            "/pdf/extract",
-            files={"file": ("multipage.pdf", io.BytesIO(pdf_content), "application/pdf")}
-        )
-
+    """Multi-page PDFs concatenate text from all pages."""
+    response = _post_pdf(
+        client,
+        [_make_page(LONG_TEXT_1), _make_page(LONG_TEXT_2)],
+        filename="multipage.pdf",
+    )
     assert response.status_code == 200
-    assert "Page 1 content" in response.json()["text"]
-    assert "Page 2 content" in response.json()["text"]
+    body = response.json()["text"]
+    assert LONG_TEXT_1 in body
+    assert LONG_TEXT_2 in body
 
 
 def test_pdf_extract_corrupted_pdf(client):
-    """Test that corrupted PDFs are handled gracefully."""
-    # PDF header but corrupted structure
-    pdf_content = b"%PDF-1.4\ninvalid structure corrupted data !!!"
-
-    with patch("pdfplumber.open") as mock_pdfplumber:
-        mock_pdfplumber.side_effect = Exception("PDF parsing failed")
-
-        response = client.post(
-            "/pdf/extract",
-            files={"file": ("corrupted.pdf", io.BytesIO(pdf_content), "application/pdf")}
-        )
-
+    """Corrupted PDFs surface as a 400 with the read-failure message."""
+    response = _post_pdf(
+        client, Exception("PDF parsing failed"), filename="corrupted.pdf"
+    )
     assert response.status_code == 400
-    assert "Invalid or corrupted PDF" in response.json()["detail"]
+    assert "Could not read PDF" in response.json()["detail"]
 
 
 def test_pdf_extract_whitespace_only_pdf(client):
-    """Test that PDFs containing only whitespace are rejected."""
-    pdf_content = b"%PDF-1.4" + b"..."
-
-    with patch("pdfplumber.open") as mock_pdfplumber:
-        # Mock PDF with only whitespace text
-        mock_pdf = MagicMock()
-        mock_page = MagicMock()
-        mock_page.extract_text.return_value = "   \n\n  \t  "  # Only whitespace
-        mock_pdf.pages = [mock_page]
-        mock_pdf.__enter__.return_value = mock_pdf
-        mock_pdf.__exit__.return_value = None
-        mock_pdfplumber.return_value = mock_pdf
-
-        response = client.post(
-            "/pdf/extract",
-            files={"file": ("whitespace.pdf", io.BytesIO(pdf_content), "application/pdf")}
-        )
-
+    """PDFs whose text is only whitespace fail the minimum-length check."""
+    response = _post_pdf(
+        client, [_make_page("   \n\n  \t  ")], filename="whitespace.pdf"
+    )
     assert response.status_code == 400
-    assert "Could not extract text" in response.json()["detail"]
+    detail = response.json()["detail"]
+    assert "too short" in detail or "No text could be extracted" in detail
 
 
 def test_pdf_extract_empty_pages(client):
-    """Test PDFs where some pages have no text but others do."""
-    pdf_content = b"%PDF-1.4" + b"..."
-
-    with patch("pdfplumber.open") as mock_pdfplumber:
-        # Mock PDF where page 1 is empty, page 2 has text
-        mock_pdf = MagicMock()
-        mock_page1 = MagicMock()
-        mock_page1.extract_text.return_value = None
-        mock_page2 = MagicMock()
-        mock_page2.extract_text.return_value = "Some content"
-        mock_pdf.pages = [mock_page1, mock_page2]
-        mock_pdf.__enter__.return_value = mock_pdf
-        mock_pdf.__exit__.return_value = None
-        mock_pdfplumber.return_value = mock_pdf
-
-        response = client.post(
-            "/pdf/extract",
-            files={"file": ("mixed.pdf", io.BytesIO(pdf_content), "application/pdf")}
-        )
-
+    """Pages without text are skipped; pages with text still come through."""
+    response = _post_pdf(
+        client,
+        [_make_page(None), _make_page(LONG_TEXT_2)],
+        filename="mixed.pdf",
+    )
     assert response.status_code == 200
-    assert "Some content" in response.json()["text"]
+    assert LONG_TEXT_2 in response.json()["text"]

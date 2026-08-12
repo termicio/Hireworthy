@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CvInput from "@/components/CvInput";
 import SkeletonReview from "@/components/SkeletonReview";
 import TopProgressBar from "@/components/TopProgressBar";
@@ -8,18 +8,34 @@ import ReviewResultComponent from "@/components/ReviewResult";
 import TailorSection from "@/components/TailorSection";
 import { reviewCV } from "@/lib/api";
 import { useCVContext } from "@/lib/cv-context";
+import { Button } from "@/components/ui/button";
 
 export default function ReviewPage() {
-  const { cvText, setCvText, reviewResult, setReviewResult, clearAll } = useCVContext();
+  const {
+    cvText, setCvText, reviewResult, setReviewResult, clearAll,
+    resultIsStale, markResultStale, markResultFresh,
+  } = useCVContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingCvText, setPendingCvText] = useState<string | null>(null);
+
+  // On mount, a result already present in context was inherited from a
+  // previous visit — flag it as stale so the banner shows. A fresh
+  // submit later in this view will clear the flag again.
+  const didMount = useRef(false);
+  useEffect(() => {
+    if (didMount.current) return;
+    didMount.current = true;
+    if (reviewResult !== null) markResultStale();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleAnalyse() {
     setLoading(true);
     setError(null);
     try {
       setReviewResult(await reviewCV(cvText));
+      markResultFresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Review failed.");
       console.error(e);
@@ -68,14 +84,18 @@ export default function ReviewPage() {
             <div style={{ background: "#111111", border: "1px solid #E8FF00", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
               <p style={{ fontSize: "0.8rem", color: "#F5F5F5" }}>You have existing results. Replace CV and run new analysis?</p>
               <div style={{ display: "flex", gap: "8px" }}>
-                <button
+                <Button
+                  type="button"
+                  variant="primary"
                   onClick={() => { clearAll(); setCvText(pendingCvText); setPendingCvText(null); }}
-                  style={{ background: "#E8FF00", color: "#080808", border: "none", padding: "8px 16px", fontWeight: 700, cursor: "pointer", fontSize: "0.75rem", fontFamily: "inherit" }}
-                >YES</button>
-                <button
+                  className="h-auto py-2 px-4 text-xs"
+                >YES</Button>
+                <Button
+                  type="button"
+                  variant="secondary"
                   onClick={() => setPendingCvText(null)}
-                  style={{ background: "transparent", color: "#666666", border: "1px solid #333333", padding: "8px 16px", cursor: "pointer", fontSize: "0.75rem", fontFamily: "inherit" }}
-                >NO</button>
+                  className="h-auto py-2 px-4 text-xs text-[#666666]"
+                >NO</Button>
               </div>
             </div>
           )}
@@ -84,31 +104,28 @@ export default function ReviewPage() {
 
           {error && <p style={{ fontSize: "0.85rem", color: "#FF3D00" }}>{error}</p>}
 
-          <button
+          <Button
+            type="button"
+            variant="primary"
             onClick={handleAnalyse}
             disabled={isDisabled || loading}
-            style={{
-              background: isDisabled ? "#1a1a1a" : "#E8FF00",
-              color: isDisabled ? "#444444" : "#080808",
-              border: "none", padding: "1rem", width: "100%",
-              cursor: isDisabled ? "not-allowed" : "pointer",
-              fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.15em",
-              textTransform: "uppercase", fontFamily: "inherit",
-            }}
+            className="w-full h-auto py-4 text-[0.75rem]"
           >
             {"Analyse CV →"}
-          </button>
+          </Button>
         </div>
       )}
 
       {/* ── AFTER RESULTS: two-column layout ── */}
       {reviewResult !== null && (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-          {/* Banner */}
-          <div style={{ background: "#111111", border: "1px solid #222222", padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <p style={{ fontSize: "0.75rem", color: "#666666" }}>Showing previous results. Clear to run a new analysis.</p>
-            <button onClick={clearAll} style={{ fontSize: "0.7rem", color: "#E8FF00", background: "none", border: "none", cursor: "pointer", fontWeight: 700, letterSpacing: "0.1em", fontFamily: "inherit" }}>CLEAR →</button>
-          </div>
+          {/* Banner — only when the result was inherited from a previous visit */}
+          {resultIsStale && (
+            <div style={{ background: "#111111", border: "1px solid #222222", padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <p style={{ fontSize: "0.75rem", color: "#666666" }}>Showing previous results. Clear to run a new analysis.</p>
+              <Button type="button" variant="ghost" onClick={clearAll} className="h-auto p-0 text-[0.7rem] text-[#E8FF00] hover:bg-transparent">CLEAR →</Button>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8" style={{ alignItems: "start" }}>
             {/* LEFT */}
@@ -122,12 +139,14 @@ export default function ReviewPage() {
                 <p style={{ fontSize: "0.75rem", color: "#444444", lineHeight: 1.5, fontFamily: "monospace", whiteSpace: "pre-wrap", overflow: "hidden" }}>
                   {cvText.split("\n").slice(0, 3).join("\n")}
                 </p>
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={clearAll}
-                  style={{ marginTop: "12px", fontSize: "0.65rem", color: "#666666", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.1em", fontFamily: "inherit", textTransform: "uppercase" }}
+                  className="mt-3 h-auto p-0 text-[0.65rem] text-[#666666] hover:bg-transparent hover:text-[#666666]"
                 >
                   EDIT CV ↓
-                </button>
+                </Button>
               </div>
               <TailorSection cv={cvText} mode="general" jobDescription="" missingKeywords={[]} suggestions={[]} />
             </div>

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:16
@@ -11,15 +9,27 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobtracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
     build: ./backend
     ports:
       - "8000:8000"
+    # Create backend/.env from backend/.env.example first — this is where
+    # ANTHROPIC_API_KEY comes from.
     env_file:
       - ./backend/.env
+    environment:
+      # Overrides whatever .env says: inside the network the database is
+      # reachable as "db", never as localhost.
+      DATABASE_URL: postgresql://jobtracker:jobtracker@db:5432/jobtracker
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./backend:/app
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload

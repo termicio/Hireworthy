@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { uploadPDF } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   value: string;
@@ -12,7 +13,6 @@ interface Props {
 
 const baseInputStyle: React.CSSProperties = {
   background: "#111111",
-  border: "1px solid #222222",
   color: "#F5F5F5",
   padding: "12px",
   fontSize: "0.8rem",
@@ -75,40 +75,26 @@ export default function CvInput({ value, onChange, minHeight = 280 }: Props) {
     if (file) handleFile(file);
   }
 
-  const toggleBtnBase: React.CSSProperties = {
-    padding: "4px 12px",
-    fontSize: "0.65rem",
-    letterSpacing: "0.1em",
-    cursor: "pointer",
-    border: "1px solid #222222",
-    fontFamily: "inherit",
-    fontWeight: 600,
-    textTransform: "uppercase",
-  };
-
-  const activeStyle: React.CSSProperties = {
-    ...toggleBtnBase,
-    background: "#E8FF00",
-    color: "#080808",
-  };
-
-  const inactiveStyle: React.CSSProperties = {
-    ...toggleBtnBase,
-    background: "transparent",
-    color: "#666666",
-    border: "1px solid #444444",
-  };
-
   return (
     <div className="flex flex-col gap-2">
       {/* Toggle */}
       <div className="flex gap-1">
-        <button style={mode === "text" ? activeStyle : inactiveStyle} onClick={() => setMode("text")}>
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === "text" ? "primary" : "secondary"}
+          onClick={() => setMode("text")}
+        >
           Paste text
-        </button>
-        <button style={mode === "pdf" ? activeStyle : inactiveStyle} onClick={() => setMode("pdf")}>
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === "pdf" ? "primary" : "secondary"}
+          onClick={() => setMode("pdf")}
+        >
           Upload PDF
-        </button>
+        </Button>
       </div>
 
       {mode === "text" ? (
@@ -117,9 +103,8 @@ export default function CvInput({ value, onChange, minHeight = 280 }: Props) {
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Paste your CV here…"
+            className="border border-border focus:border-[#E8FF00]"
             style={{ ...baseInputStyle, minHeight: `${minHeight}px` }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "#E8FF00")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "#222222")}
           />
           <p style={{ fontSize: "0.75rem", color: "#666666", marginTop: "8px" }}>
             {value.trim() === "" ? "0" : value.trim().split(/\s+/).length} words
@@ -144,8 +129,8 @@ export default function CvInput({ value, onChange, minHeight = 280 }: Props) {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             style={{
-              background: "#1e293b",
-              border: `2px dashed ${isDragging ? "#E8FF00" : "#334155"}`,
+              background: "#111111",
+              border: `2px dashed ${isDragging ? "#E8FF00" : "#222222"}`,
               minHeight: `${minHeight}px`,
               display: "flex",
               flexDirection: "column",

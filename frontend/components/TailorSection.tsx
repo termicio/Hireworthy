@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { tailorCV, tailorCVGeneral } from "@/lib/api";
 import PdfExportSection from "@/components/PdfExportSection";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   cv: string;
@@ -96,21 +97,16 @@ export default function TailorSection({ cv, jobDescription, missingKeywords, sug
         </p>
       </div>
 
-      <button
+      <Button
+        type="button"
+        variant="primary"
         onClick={handleTailor}
         disabled={tailoring}
-        className="flex items-center justify-center gap-2 w-full py-4 uppercase tracking-widest font-display font-bold text-sm"
-        style={{
-          background: tailoring ? "#b3c700" : "#E8FF00",
-          color: "#080808",
-          cursor: tailoring ? "not-allowed" : "pointer",
-          letterSpacing: "0.1em",
-          border: "none",
-        }}
+        className="w-full h-auto py-4 text-sm"
       >
         {tailoring && <Loader2 size={15} className="animate-spin" />}
         {tailoring ? "Rewriting your CV…" : buttonLabel}
-      </button>
+      </Button>
 
       {error && <p style={{ color: "#FF3D00", fontSize: "0.8rem" }}>{error}</p>}
 
@@ -137,15 +133,14 @@ export default function TailorSection({ cv, jobDescription, missingKeywords, sug
             </div>
           </div>
 
-          <button
+          <Button
+            type="button"
+            variant="secondary"
             onClick={handleCopy}
-            className="self-start uppercase tracking-widest font-display font-bold text-xs px-5 py-3 transition-colors"
-            style={{ border: "1px solid #E8FF00", color: "#E8FF00", background: "transparent", cursor: "pointer" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#E8FF00"; e.currentTarget.style.color = "#080808"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#E8FF00"; }}
+            className="self-start h-auto py-3 px-5 border-[#E8FF00] text-[#E8FF00] hover:bg-[#E8FF00] hover:text-[#080808]"
           >
             {copied ? "Copied!" : "Copy Tailored CV →"}
-          </button>
+          </Button>
 
           <PdfExportSection cvText={tailoredCv} />
         </div>

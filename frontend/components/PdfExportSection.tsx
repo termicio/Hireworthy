@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { useRef, useState, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import type { PDFLayout } from "@/lib/api";
-import { buildPreviewHtml } from "@/components/CVPreview";
+import { buildPreviewHtml, buildPrintFragment } from "@/components/CVPreview";
+import { Button } from "@/components/ui/button";
 
 const SWATCHES: { color: string | null; label: string }[] = [
   { color: "#1B2A4A", label: "Midnight Navy" },
@@ -16,6 +17,11 @@ const SWATCHES: { color: string | null; label: string }[] = [
 const A4_W = 794;
 const A4_H = 1123;
 
+// SSR-safe wykrycie klienta bez setState w efekcie
+// (react-hooks/set-state-in-effect): na serwerze false, na kliencie true.
+const emptySubscribe = () => () => {};
+const useMounted = () => useSyncExternalStore(emptySubscribe, () => true, () => false);
+
 interface Props {
   cvText: string;
 }
@@ -23,8 +29,7 @@ interface Props {
 export default function PdfExportSection({ cvText }: Props) {
   const [selectedLayout, setSelectedLayout] = useState<PDFLayout>("modern");
   const [selectedColor, setSelectedColor] = useState<string | null>("#1B2A4A");
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
+  const mounted = useMounted();
 
   const previewColRef = useRef<HTMLDivElement>(null);
   const [previewWidth, setPreviewWidth] = useState(400);
@@ -44,21 +49,10 @@ export default function PdfExportSection({ cvText }: Props) {
   const previewHeight = Math.round(A4_H * scale);
 
   const html = buildPreviewHtml(cvText, selectedLayout, selectedColor);
+  const printFragment = buildPrintFragment(cvText, selectedLayout, selectedColor);
 
   function handleDownloadPDF() {
-    const win = window.open("", "_blank");
-    if (!win) {
-      setPdfError("Popup blocked — allow popups for this site and try again.");
-      return;
-    }
-    setPdfLoading(true);
-    win.document.write(html);
-    win.document.close();
-    win.onload = () => {
-      win.focus();
-      win.print();
-      setPdfLoading(false);
-    };
+    window.print();
   }
 
   return (
@@ -75,26 +69,17 @@ export default function PdfExportSection({ cvText }: Props) {
               Layout
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-              {(["classic", "modern", "split"] as PDFLayout[]).map((l) => (
-                <button
+              {(["classic", "modern"] as PDFLayout[]).map((l) => (
+                <Button
                   key={l}
+                  type="button"
+                  size="sm"
+                  variant={selectedLayout === l ? "primary" : "secondary"}
                   onClick={() => setSelectedLayout(l)}
-                  style={{
-                    padding: "6px 12px",
-                    fontSize: "0.65rem",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    fontWeight: 600,
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                    border: selectedLayout === l ? "none" : "1px solid #222222",
-                    background: selectedLayout === l ? "#E8FF00" : "transparent",
-                    color: selectedLayout === l ? "#080808" : "#666666",
-                    textAlign: "left",
-                  }}
+                  className="justify-start"
                 >
                   {l}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -133,31 +118,14 @@ export default function PdfExportSection({ cvText }: Props) {
             </div>
           </div>
 
-          <button
+          <Button
+            type="button"
+            variant="primary"
             onClick={handleDownloadPDF}
-            disabled={pdfLoading}
-            style={{
-              padding: "0.75rem 1rem",
-              background: pdfLoading ? "#b3c700" : "#E8FF00",
-              color: "#080808",
-              border: "none",
-              cursor: pdfLoading ? "not-allowed" : "pointer",
-              fontSize: "0.65rem",
-              fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              fontFamily: "inherit",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-            }}
+            className="h-auto py-3 px-4 text-[0.65rem]"
           >
-            {pdfLoading && <Loader2 size={12} className="animate-spin" />}
-            {pdfLoading ? "Opening..." : "Download PDF →"}
-          </button>
-
-          {pdfError && <p style={{ color: "#FF3D00", fontSize: "0.7rem" }}>{pdfError}</p>}
+            Download PDF →
+          </Button>
         </div>
 
         {/* Right: A4 preview */}
@@ -189,6 +157,34 @@ export default function PdfExportSection({ cvText }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Print-only fragment, portaled to <body> so @media print can isolate it
+          from the rest of the app (sidebar, nav, this very form) without a
+          separate window — avoids the window.open()+print() renderer hang. */}
+      {mounted &&
+        createPortal(
+          <div
+            id="pdf-print-root"
+            style={{
+              display: "none",
+              ...cssStringToObject(printFragment.containerStyle),
+            }}
+            dangerouslySetInnerHTML={{ __html: printFragment.innerHtml }}
+          />,
+          document.body
+        )}
     </div>
   );
+}
+
+/** Parses a flat `"prop:value;prop:value"` CSS string into a React style object. */
+function cssStringToObject(css: string): React.CSSProperties {
+  const style: Record<string, string> = {};
+  for (const decl of css.split(";")) {
+    const [prop, ...rest] = decl.split(":");
+    if (!prop || rest.length === 0) continue;
+    const camelProp = prop.trim().replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+    style[camelProp] = rest.join(":").trim();
+  }
+  return style as React.CSSProperties;
 }

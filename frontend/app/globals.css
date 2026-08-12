@@ -25,6 +25,7 @@
   --color-accent-foreground:    var(--accent-foreground);
   --color-destructive:          var(--destructive);
   --color-border:               var(--border);
+  --color-border-strong:        var(--border-strong);
   --color-input:                var(--input);
   --color-ring:                 var(--ring);
   --color-chart-1:              var(--chart-1);
@@ -56,6 +57,7 @@
   --accent-foreground:    #080808;
   --destructive:          #FF3D00;
   --border:               #222222;
+  --border-strong:        #333333;
   --input:                #111111;
   --ring:                 #E8FF00;
 
@@ -96,14 +98,38 @@
   font-feature-settings: "tnum";
 }
 
+/* ── Heading scale — single source of truth for page H1s ──── */
+.page-h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.1;
+}
+
+/* ── Main content offset (desktop only; sidebar is fixed) ──── */
+.app-content {
+  margin-left: 72px;
+}
+
 /* ── Hover-expand sidebar ─────────────────────────────────── */
 .sidebar-shell {
+  position: fixed;
+  left: 0;
+  z-index: 40;
   width: 72px;
-  transition: width 200ms ease;
+  transition: width 200ms ease, box-shadow 200ms ease;
   overflow: hidden;
+}
+/* Desktop: pełna wysokość przy lewej krawędzi. Pion trzymany w media
+   query zamiast top/height w bazie — minifier usuwa `top: auto`
+   (wartość początkowa), więc mobile nie umie go odkręcić. */
+@media (min-width: 641px) {
+  .sidebar-shell {
+    top: 0;
+    height: 100vh;
+  }
 }
 .sidebar-shell:hover {
   width: 200px;
+  box-shadow: 8px 0 24px rgba(0, 0, 0, 0.6);
 }
 
 /* Collapsed: centre icons, hide labels */
@@ -114,6 +140,24 @@
 }
 .sidebar-shell:not(:hover) .sidebar-nav-label {
   display: none;
+}
+
+/* Scrim behind the expanded sidebar: the panel overlaps a strip of
+   content while hovered (72px -> 200px), so dim the page to signal
+   "menu open" instead of silently covering a header. Disappears the
+   instant the pointer leaves — never covers content while idle. */
+.app-content::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 39;
+  transition: opacity 200ms ease;
+}
+body:has(.sidebar-shell:hover) .app-content::before {
+  opacity: 1;
 }
 
 
@@ -144,7 +188,10 @@ html { scroll-behavior: smooth; }
 
 /* ── Mobile bottom nav ────────────────────────────────────── */
 @media (max-width: 640px) {
-  main { margin-left: 0 !important; }
+  .app-content {
+    margin-left: 0;
+    padding-bottom: 72px;
+  }
   .sidebar-shell {
     position: fixed;
     bottom: 0;
@@ -170,9 +217,6 @@ html { scroll-behavior: smooth; }
   }
   .sidebar-nav-label {
     display: none;
-  }
-  main {
-    padding-bottom: 72px !important;
   }
 }
 
@@ -201,6 +245,33 @@ html { scroll-behavior: smooth; }
 }
 #nprogress .spinner {
   display: none !important;
+}
+
+/* ── Print: CV export (PdfExportSection) ──────────────────── */
+/* #pdf-print-root is portaled directly under <body> (see PdfExportSection.tsx)
+   and hidden on screen. On print, hide everything else and show only the
+   CV fragment — light background, dark text, regardless of the app's dark
+   theme. No window.open()/second-window print — avoids the renderer hang
+   observed with that approach. */
+@media print {
+  /* Ukrywaj resztę apki TYLKO gdy portal istnieje — inaczej Ctrl+P na
+     stronach bez eksportu CV (dashboard, kanban, landing) drukuje pustkę. */
+  body:has(#pdf-print-root) > *:not(#pdf-print-root) {
+    display: none !important;
+  }
+  #pdf-print-root {
+    display: block !important;
+    position: static;
+    margin: 0;
+    box-shadow: none;
+  }
+  body::before {
+    display: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 0;
+  }
 }
 
 /* ── Noise texture overlay ────────────────────────────────── */

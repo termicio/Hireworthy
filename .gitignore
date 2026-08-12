@@ -1,15 +1,42 @@
-# Auto memory i lokalna konfiguracja Claude Code (jesli kiedys trafi do repo)
-.claude/settings.local.json
+# --- Secrets (NEVER commit) ---
+.env
+.env.*
+!.env.example
+*.pem
 
-# Standardowe smieci Python / Node - dostosuj do swojego stosu
+# --- Python ---
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
 .venv/
 venv/
-node_modules/
-.env
-.DS_Store
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
 
-# Pliki raportow agentow - zostaw .gitkeep, ale rozwaz czy chcesz commitowac
-# faktyczne raporty (jesli tak, usun ponizsza linie)
-# docs/agent-runs/*.md
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- Editors / OS ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Deploy ---
+.vercel
+
+# --- Claude Code local config ---
+# launch.json holds absolute machine-specific paths, so it stays local.
+.claude/settings.local.json
+.claude/launch.json

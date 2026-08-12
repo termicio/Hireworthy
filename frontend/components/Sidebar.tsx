@@ -26,7 +26,6 @@ export default function Sidebar() {
   return (
     <aside
       className="sidebar-shell shrink-0 flex flex-col bg-card border-r border-border"
-      style={{ position: "fixed", top: 0, left: 0, height: "100vh", zIndex: 40 }}
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
     >

@@ -24,6 +24,19 @@ async def create_pool() -> None:
                 updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
         """)
+        await conn.execute("""
+            ALTER TABLE applications ADD COLUMN IF NOT EXISTS job_description TEXT
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS analyses (
+                id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                application_id   UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+                overall_score    INT NOT NULL,
+                missing_keywords JSONB NOT NULL DEFAULT '[]',
+                categories       JSONB NOT NULL DEFAULT '[]',
+                created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """)
 
 
 async def close_pool() -> None:

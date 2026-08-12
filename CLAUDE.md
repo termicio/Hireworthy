@@ -2,11 +2,15 @@
 
 ## Co to jest ten projekt
 
-AI-powered Job Application Tracker — full-stack aplikacja webowa, która pozwala użytkownikowi wklejać CV i ogłoszenia o pracę, otrzymywać AI-generowany wynik dopasowania (0-100), listę brakujących słów kluczowych i konkretne sugestie poprawy CV. Aplikacja umożliwia też śledzenie statusu wysłanych aplikacji (Applied → Interview → Offer → Rejected) oraz przeglądanie statystyk na dashboardzie.
+**Hireworthy** — full-stack aplikacja webowa do oceny CV. Użytkownik wkleja CV (lub wrzuca PDF) i dostaje: ocenę jakości samego CV (`/review`), wynik dopasowania do konkretnego ogłoszenia 0-100 z brakującymi słowami kluczowymi (`/analyse`), oraz przepisane przez AI CV pod dane ogłoszenie (tailor). Aplikacja śledzi też status wysłanych aplikacji na tablicy kanban (Applied → Interview → Offer → Rejected) i pokazuje statystyki na dashboardzie.
 
-**Stack:** Next.js 14 (App Router) + Tailwind (frontend) / FastAPI + Python 3.11 (backend) / PostgreSQL (baza) / Anthropic Claude API (AI).
-**Stan:** scaffold gotowy, frontend do zbudowania przez Claude Code, backend działa na in-memory store (wymaga podpięcia PostgreSQL).
-**Brak auth** — na tym etapie aplikacja nie ma logowania, wszystkie dane są współdzielone.
+**Stack:** Next.js 16 (App Router, Turbopack) + React 19 + Tailwind 4 (frontend) / FastAPI + Python 3.11 (backend) / PostgreSQL przez asyncpg (baza) / Anthropic Claude API (AI).
+**Stan:** aplikacja kompletna i działająca end-to-end. Backend ma 135 przechodzących testów.
+**Brak auth** — aplikacja nie ma logowania, wszystkie dane są współdzielone. To znany, udokumentowany brak (patrz sekcja Limitations w README).
+
+**Dwa entrypointy backendu:**
+- `main:app` — prawdziwy, wymaga działającego PostgreSQL w `DATABASE_URL`.
+- `main_mock:app` — ten sam zestaw endpointów, ale aplikacje trzymane w pamięci zamiast w bazie (`mock_applications.py`). AI i parsowanie PDF są **prawdziwe** — mock zastępuje wyłącznie warstwę bazy danych.
 
 ## Komendy weryfikujące zmiany
 
@@ -14,8 +18,9 @@ AI-powered Job Application Tracker — full-stack aplikacja webowa, która pozwa
 ```bash
 cd backend
 source venv/bin/activate        # Windows: venv\Scripts\activate
-uvicorn main:app --reload       # dev server na http://localhost:8000
-pytest tests/                   # testy (gdy zostaną napisane)
+uvicorn main:app --reload       # dev server na http://localhost:8000 (wymaga bazy)
+uvicorn main_mock:app --reload  # to samo bez bazy (aplikacje in-memory)
+pytest tests/                   # 135 testów, nie wywołują prawdziwego API
 ```
 
 ### Frontend
@@ -61,7 +66,7 @@ curl -X POST http://localhost:8000/analyse/ \
 ### Ogólne
 - Każde wywołanie API musi mieć obsługę loading state i error state
 - Żadnych `console.log` w kodzie produkcyjnym (tylko `console.error` w catch)
-- Dark theme: bg `#0f172a`, cards `#1e293b`, borders `#334155`, accent `#6366f1`
+- Dark theme: bg `#080808`, cards `#111111`, borders `#222222`, primary `#E8FF00`, accent `#FF3D00`, tekst `#F5F5F5`, tekst wyciszony `#666666`. Kolory bierz ze zmiennych CSS w `app/globals.css` (`--background`, `--card`, `--primary`, ...), nie hardkoduj nowych wartości.
 - Ikony wyłącznie z `lucide-react`
 
 ---

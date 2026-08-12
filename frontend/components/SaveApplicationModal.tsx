@@ -1,18 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { createApplication } from "@/lib/api";
+import { createApplication, type MatchCategory } from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
 interface SaveApplicationModalProps {
   matchScore: number;
+  jobDescription?: string;
+  missingKeywords?: string[];
+  categories?: MatchCategory[];
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export default function SaveApplicationModal({ matchScore, open, onClose, onSaved }: SaveApplicationModalProps) {
+export default function SaveApplicationModal({
+  matchScore, jobDescription, missingKeywords, categories, open, onClose, onSaved,
+}: SaveApplicationModalProps) {
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [saving, setSaving] = useState(false);
@@ -22,10 +28,18 @@ export default function SaveApplicationModal({ matchScore, open, onClose, onSave
     if (!company.trim() || !role.trim()) { setError("Both fields are required."); return; }
     setSaving(true); setError(null);
     try {
-      await createApplication({ company: company.trim(), role: role.trim(), match_score: matchScore });
+      await createApplication({
+        company: company.trim(),
+        role: role.trim(),
+        job_description: jobDescription,
+        match_score: matchScore,
+        missing_keywords: missingKeywords,
+        categories,
+      });
       onSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save.");
+    } finally {
       setSaving(false);
     }
   }
@@ -65,17 +79,15 @@ export default function SaveApplicationModal({ matchScore, open, onClose, onSave
                 value={value}
                 onChange={(e) => set(e.target.value)}
                 placeholder={placeholder}
+                className="border border-border focus:border-[#E8FF00]"
                 style={{
                   background: "#080808",
-                  border: "1px solid #222222",
                   color: "#F5F5F5",
                   padding: "10px 12px",
                   fontSize: "0.875rem",
                   outline: "none",
                   width: "100%",
                 }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "#E8FF00")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "#222222")}
               />
             </div>
           ))}
@@ -83,27 +95,24 @@ export default function SaveApplicationModal({ matchScore, open, onClose, onSave
           {error && <p style={{ color: "#FF3D00", fontSize: "0.8rem" }}>{error}</p>}
 
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
+              type="button"
+              variant="secondary"
               onClick={onClose}
               disabled={saving}
-              className="flex-1 py-2.5 uppercase tracking-widest font-display font-bold text-xs transition-colors"
-              style={{ border: "1px solid #222222", color: "#666666", background: "transparent" }}
+              className="flex-1 h-auto py-2.5 text-xs text-[#666666]"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 py-2.5 uppercase tracking-widest font-display font-bold text-xs"
-              style={{
-                background: saving ? "#b3c700" : "#E8FF00",
-                color: "#080808",
-                border: "none",
-                cursor: saving ? "not-allowed" : "pointer",
-              }}
+              className="flex-1 h-auto py-2.5 text-xs"
             >
               {saving ? "Saving…" : "Save"}
-            </button>
+            </Button>
           </div>
         </div>
       </DialogContent>

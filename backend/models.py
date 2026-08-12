@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
+from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
@@ -68,7 +68,9 @@ class ApplicationCreate(BaseModel):
     company: str
     role: str
     job_description: Optional[str] = None
-    match_score: Optional[int] = None
+    match_score: Optional[int] = Field(default=None, ge=0, le=100)
+    missing_keywords: Optional[List[str]] = None
+    categories: Optional[List[MatchCategory]] = None
     notes: Optional[str] = None
 
 
@@ -84,9 +86,24 @@ class ApplicationOut(BaseModel):
     role: str
     status: ApplicationStatus
     match_score: Optional[int]
+    job_description: Optional[str] = None
     notes: Optional[str]
     created_at: datetime
     updated_at: datetime
+
+
+class ReanalyseRequest(BaseModel):
+    cv: str
+    job_description: Optional[str] = None
+
+
+class AnalysisOut(BaseModel):
+    id: str
+    application_id: str
+    overall_score: int = Field(ge=0, le=100)
+    missing_keywords: List[str]
+    categories: List[MatchCategory]
+    created_at: datetime
 
 
 class WeakBullet(BaseModel):
@@ -108,18 +125,3 @@ class CVHealthResponse(BaseModel):
 
 class ReviewResponse(CVHealthResponse):
     pass
-
-
-import re as _re
-
-class PDFGenerateRequest(BaseModel):
-    cv_text: str
-    layout: Literal["classic", "modern", "split"]
-    color: Optional[str] = None
-
-    @property
-    def safe_color(self) -> Optional[str]:
-        """Return color only if it is a valid CSS hex color (#RGB or #RRGGBB)."""
-        if self.color and _re.fullmatch(r"#[0-9A-Fa-f]{3}(?:[0-9A-Fa-f]{3})?", self.color):
-            return self.color
-        return None

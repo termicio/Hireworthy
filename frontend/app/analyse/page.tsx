@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { analyseCV } from "@/lib/api";
 import MatchScore from "@/components/MatchScore";
 import SaveApplicationModal from "@/components/SaveApplicationModal";
@@ -12,10 +12,10 @@ import CategoryBreakdown from "@/components/CategoryBreakdown";
 import SkeletonAnalyse from "@/components/SkeletonAnalyse";
 import TopProgressBar from "@/components/TopProgressBar";
 import { useCVContext } from "@/lib/cv-context";
+import { Button } from "@/components/ui/button";
 
 const inputStyle: React.CSSProperties = {
   background: "#111111",
-  border: "1px solid #222222",
   color: "#F5F5F5",
   padding: "12px",
   fontSize: "0.8rem",
@@ -28,17 +28,35 @@ const inputStyle: React.CSSProperties = {
 };
 
 export default function AnalysePage() {
-  const { cvText, setCvText, jobDescription, setJobDescription, analyseResult, setAnalyseResult, clearAll } = useCVContext();
+  const {
+    cvText, setCvText, jobDescription, setJobDescription,
+    analyseResult, setAnalyseResult, clearAll,
+    resultIsStale, markResultStale, markResultFresh,
+  } = useCVContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [saved, setSaved] = useState(false);
   const [pendingCvText, setPendingCvText] = useState<string | null>(null);
 
+  // On mount, a result already present in context was inherited from a
+  // previous visit — flag it as stale so the banner shows. A fresh
+  // submit later in this view will clear the flag again.
+  const didMount = useRef(false);
+  useEffect(() => {
+    if (didMount.current) return;
+    didMount.current = true;
+    if (analyseResult !== null) markResultStale();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleAnalyse() {
     if (!cvText.trim() || !jobDescription.trim()) { setError("Fill in both fields first."); return; }
     setLoading(true); setError(null); setAnalyseResult(null); setSaved(false);
-    try { setAnalyseResult(await analyseCV(cvText, jobDescription)); }
+    try {
+      setAnalyseResult(await analyseCV(cvText, jobDescription));
+      markResultFresh();
+    }
     catch (e) { setError(e instanceof Error ? e.message : "Analysis failed."); console.error(e); }
     finally { setLoading(false); }
   }
@@ -64,16 +82,16 @@ export default function AnalysePage() {
         <p className="uppercase tracking-widest font-medium mb-2" style={sectionHeadingStyle}>
           AI Analysis
         </p>
-        <h1 className="font-display font-bold uppercase leading-none" style={{ fontSize: "3rem", color: "#F5F5F5" }}>
+        <h1 className="page-h1 font-display font-bold uppercase" style={{ color: "#F5F5F5" }}>
           Analyse Match
         </h1>
       </div>
 
-      {/* Banner when results exist */}
-      {analyseResult !== null && (
+      {/* Banner — only when the result was inherited from a previous visit */}
+      {analyseResult !== null && resultIsStale && (
         <div style={{ background: "#111111", border: "1px solid #222222", padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <p style={{ fontSize: "0.75rem", color: "#666666" }}>Showing previous results. Clear to run a new analysis.</p>
-          <button onClick={clearAll} style={{ fontSize: "0.7rem", color: "#E8FF00", background: "none", border: "none", cursor: "pointer", fontWeight: 700, letterSpacing: "0.1em", fontFamily: "inherit" }}>CLEAR →</button>
+          <Button type="button" variant="ghost" onClick={clearAll} className="h-auto p-0 text-[0.7rem] text-[#E8FF00] hover:bg-transparent">CLEAR →</Button>
         </div>
       )}
 
@@ -82,14 +100,18 @@ export default function AnalysePage() {
         <div style={{ background: "#111111", border: "1px solid #E8FF00", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
           <p style={{ fontSize: "0.8rem", color: "#F5F5F5" }}>You have existing results. Replace CV and run new analysis?</p>
           <div style={{ display: "flex", gap: "8px" }}>
-            <button
+            <Button
+              type="button"
+              variant="primary"
               onClick={() => { clearAll(); setCvText(pendingCvText); setPendingCvText(null); }}
-              style={{ background: "#E8FF00", color: "#080808", border: "none", padding: "8px 16px", fontWeight: 700, cursor: "pointer", fontSize: "0.75rem", fontFamily: "inherit" }}
-            >YES</button>
-            <button
+              className="h-auto py-2 px-4 text-xs"
+            >YES</Button>
+            <Button
+              type="button"
+              variant="secondary"
               onClick={() => setPendingCvText(null)}
-              style={{ background: "transparent", color: "#666666", border: "1px solid #333333", padding: "8px 16px", cursor: "pointer", fontSize: "0.75rem", fontFamily: "inherit" }}
-            >NO</button>
+              className="h-auto py-2 px-4 text-xs text-[#666666]"
+            >NO</Button>
           </div>
         </div>
       )}
@@ -124,9 +146,8 @@ export default function AnalysePage() {
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
                 placeholder="Paste the job description here…"
+                className="border border-border focus:border-[#E8FF00]"
                 style={inputStyle}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "#E8FF00")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "#222222")}
               />
             </div>
           </div>
@@ -134,19 +155,15 @@ export default function AnalysePage() {
           {error && <p style={{ color: "#FF3D00", fontSize: "0.8rem" }} className="-mt-6">{error}</p>}
 
           {/* CTA */}
-          <button
+          <Button
+            type="button"
+            variant="primary"
             onClick={handleAnalyse}
             disabled={isDisabled || loading}
-            className="flex items-center justify-center gap-2 w-full py-4 uppercase tracking-widest font-display font-bold text-sm transition-opacity"
-            style={{
-              background: isDisabled ? "#1a1a1a" : "#E8FF00",
-              color: isDisabled ? "#444444" : "#080808",
-              cursor: isDisabled ? "not-allowed" : "pointer",
-              letterSpacing: "0.1em",
-            }}
+            className="w-full h-auto py-4 text-sm"
           >
             {"Analyse →"}
-          </button>
+          </Button>
         </>
       )}
 
@@ -220,10 +237,8 @@ export default function AnalysePage() {
                 {analyseResult.suggestions.map((s, i) => (
                   <motion.div
                     key={i}
-                    className="flex gap-5 py-5"
-                    style={{ borderBottom: "1px solid #222222", borderLeft: "2px solid #222222", paddingLeft: "20px" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderLeftColor = "#E8FF00")}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderLeftColor = "#222222")}
+                    className="flex gap-5 py-5 border-b border-border border-l-2 border-l-border hover:border-l-[#E8FF00]"
+                    style={{ paddingLeft: "20px" }}
                     whileHover={{ x: 6 }}
                     transition={{ type: "spring", stiffness: 300, damping: 25 }}
                   >
@@ -254,15 +269,14 @@ export default function AnalysePage() {
                 Application saved
               </div>
             ) : (
-              <button
+              <Button
+                type="button"
+                variant="secondary"
                 onClick={() => setShowModal(true)}
-                className="self-start uppercase tracking-widest font-display font-bold text-xs px-5 py-3 transition-colors"
-                style={{ border: "1px solid #E8FF00", color: "#E8FF00", background: "transparent" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "#E8FF00"; e.currentTarget.style.color = "#080808"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#E8FF00"; }}
+                className="self-start h-auto py-3 px-5 border-[#E8FF00] text-[#E8FF00] hover:bg-[#E8FF00] hover:text-[#080808]"
               >
                 Save Application →
-              </button>
+              </Button>
             )}
           </div>
 
@@ -281,6 +295,9 @@ export default function AnalysePage() {
 
       <SaveApplicationModal
         matchScore={analyseResult?.overall_score ?? 0}
+        jobDescription={jobDescription}
+        missingKeywords={analyseResult?.missing_keywords}
+        categories={analyseResult?.categories}
         open={showModal}
         onClose={() => setShowModal(false)}
         onSaved={() => { setShowModal(false); setSaved(true); }}

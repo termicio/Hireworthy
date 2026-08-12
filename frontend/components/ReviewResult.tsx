@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { AlertTriangle, Zap } from "lucide-react";
 import type { ReviewResult } from "@/lib/api";
 import CategoryBreakdown from "@/components/CategoryBreakdown";
+import AnimatedScore from "@/components/AnimatedScore";
 
 interface Props {
   result: ReviewResult;
@@ -25,32 +25,17 @@ const headingStyle: import("react").CSSProperties = {
 };
 
 export default function ReviewResult({ result }: Props) {
-  const [displayed, setDisplayed] = useState(0);
   const color = scoreColor(result.overall_score);
-
-  useEffect(() => {
-    let start: number | null = null;
-    const duration = 1000;
-    const to = result.overall_score;
-    const step = (timestamp: number) => {
-      if (!start) start = timestamp;
-      const progress = Math.min((timestamp - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayed(Math.round(to * eased));
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [result.overall_score]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
       {/* A — Overall Score */}
       <div>
         <p style={headingStyle}>Overall Score</p>
-        <p style={{ fontSize: "4rem", fontWeight: 700, color, lineHeight: 1, marginBottom: "0.75rem", fontVariantNumeric: "tabular-nums" }}>
-          {displayed}
-          <span style={{ fontSize: "1.5rem", color: "#666666" }}>/100</span>
-        </p>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem", marginBottom: "0.75rem" }}>
+          <AnimatedScore score={result.overall_score} color={color} fontSize="4rem" />
+          <span style={{ fontSize: "1.5rem", color: "#666666", paddingBottom: "0.5rem" }}>/100</span>
+        </div>
         <div style={{ width: "100%", background: "#222222", height: "8px" }}>
           <div style={{ width: `${result.overall_score}%`, background: color, height: "100%", transition: "width 0.4s ease" }} />
         </div>

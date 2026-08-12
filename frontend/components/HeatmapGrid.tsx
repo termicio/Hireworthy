@@ -130,7 +130,7 @@ export default function HeatmapGrid({ data }: Props) {
                   style={{
                     width: "12px",
                     height: "12px",
-                    borderRadius: "2px",
+                    borderRadius: 0,
                     background: getColor(count),
                     cursor: count > 0 ? "pointer" : "default",
                   }}
@@ -152,12 +152,12 @@ export default function HeatmapGrid({ data }: Props) {
             left: tooltip.x + 8,
             top: tooltip.y - 36,
             pointerEvents: "none",
-            background: "#1e293b",
-            border: "1px solid #334155",
+            background: "#111111",
+            border: "1px solid #222222",
             color: "#F5F5F5",
             fontSize: "0.7rem",
             padding: "4px 8px",
-            borderRadius: "2px",
+            borderRadius: 0,
             zIndex: 50,
             whiteSpace: "nowrap",
           }}

@@ -6,4 +6,4 @@ python-dotenv==1.0.1
 httpx==0.27.0
 pdfplumber==0.11.4
 python-multipart==0.0.9
-weasyprint  # PDF generation. Windows: requires GTK3 runtime (https://github.com/tschoonj/GTK-for-Windows-Runtime-Installer). Fallback option: pdfkit + wkhtmltopdf.
+asyncpg==0.29.0

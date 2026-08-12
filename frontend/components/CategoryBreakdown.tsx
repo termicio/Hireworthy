@@ -26,9 +26,8 @@ export default function CategoryBreakdown({ categories }: Props) {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ x: 3 }}
             transition={{ duration: 0.5, delay: index * 0.1, ...cardSpring }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#E8FF00")}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222222")}
-            style={{ background: "#111111", border: "1px solid #222222", padding: "0.875rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}
+            className="border border-border hover:border-[#E8FF00]"
+            style={{ background: "#111111", padding: "0.875rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}
           >
             {/* Label + score */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>

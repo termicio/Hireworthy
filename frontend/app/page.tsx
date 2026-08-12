@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AnimatedSection from "@/components/AnimatedSection";
+import { buttonVariants } from "@/components/ui/button";
 
 const steps = [
   { num: "01", title: "Upload your CV", desc: "Paste text or drop a PDF" },
@@ -29,17 +30,12 @@ export default function HomePage() {
             Know exactly where your CV stands
           </h1>
           <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
-            <Link
-              href="/review"
-              className="uppercase tracking-widest font-bold text-sm px-8 py-4"
-              style={{ background: "#E8FF00", color: "#080808" }}
-            >
+            <Link href="/review" className={buttonVariants({ variant: "primary", className: "h-auto py-4 px-8 text-sm" })}>
               Review my CV →
             </Link>
             <Link
               href="/analyse"
-              className="uppercase tracking-widest font-bold text-sm px-8 py-4"
-              style={{ border: "1px solid #E8FF00", color: "#E8FF00" }}
+              className={buttonVariants({ variant: "secondary", className: "h-auto py-4 px-8 text-sm border-[#E8FF00] text-[#E8FF00] hover:bg-[#E8FF00] hover:text-[#080808]" })}
             >
               Match to a job →
             </Link>
@@ -52,7 +48,7 @@ export default function HomePage() {
         <AnimatedSection>
           <p style={{ fontSize: "0.7rem", letterSpacing: "0.2em", color: "#666666", marginBottom: "48px", textTransform: "uppercase" }}>How it works</p>
         </AnimatedSection>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "2rem" }}>
+        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: "2rem" }}>
           {steps.map((step, i) => (
             <AnimatedSection key={step.num} delay={i * 120}>
               <div style={{ borderTop: "1px solid #222222", paddingTop: "32px", paddingRight: "48px" }}>
@@ -70,7 +66,7 @@ export default function HomePage() {
         <AnimatedSection>
           <p style={{ fontSize: "0.7rem", letterSpacing: "0.2em", color: "#666666", marginBottom: "48px", textTransform: "uppercase" }}>What you get</p>
         </AnimatedSection>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px" }}>
+        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: "24px" }}>
           {features.map((f, i) => (
             <AnimatedSection key={f.title} delay={i * 140}>
               <div style={{ background: "#111111", border: "1px solid #222222", padding: "32px", height: "100%" }}>
@@ -94,10 +90,7 @@ export default function HomePage() {
         }}
       >
         <p style={{ color: "#F5F5F5", fontSize: "1.1rem", fontWeight: 600 }}>Ready to know where you stand?</p>
-        <Link
-          href="/review"
-          style={{ background: "#E8FF00", color: "#080808", padding: "14px 32px", fontWeight: 700, fontSize: "0.875rem", letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}
-        >
+        <Link href="/review" className={buttonVariants({ variant: "primary", className: "h-auto py-3.5 px-8 text-sm no-underline" })}>
           REVIEW MY CV →
         </Link>
       </AnimatedSection>

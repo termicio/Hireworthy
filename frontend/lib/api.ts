@@ -10,6 +10,7 @@ export interface Application {
   role: string;
   status: ApplicationStatus;
   match_score: number | null;
+  job_description: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -31,6 +32,15 @@ export interface AnalyseResult {
   explanation: string;
   missing_keywords: string[];
   suggestions: string[];
+}
+
+export interface Analysis {
+  id: string;
+  application_id: string;
+  overall_score: number;
+  missing_keywords: string[];
+  categories: MatchCategory[];
+  created_at: string;
 }
 
 export interface HealthCategory {
@@ -62,7 +72,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail ?? `Request failed: ${res.status}`);
   }
-  return res.json();
+  if (res.status === 204 || res.headers.get("content-length") === "0") {
+    return undefined as T;
+  }
+  const text = await res.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 // --- Applications ---
@@ -70,10 +85,16 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const getApplications = () =>
   request<Application[]>("/applications/");
 
+export const getApplication = (id: string) =>
+  request<Application>(`/applications/${id}`);
+
 export const createApplication = (data: {
   company: string;
   role: string;
+  job_description?: string;
   match_score?: number;
+  missing_keywords?: string[];
+  categories?: MatchCategory[];
   notes?: string;
 }) => request<Application>("/applications/", { method: "POST", body: JSON.stringify(data) });
 
@@ -82,6 +103,17 @@ export const updateApplication = (id: string, data: { status?: ApplicationStatus
 
 export const deleteApplication = (id: string) =>
   request<void>(`/applications/${id}`, { method: "DELETE" });
+
+// --- Analyses (per-application history) ---
+
+export const getAnalyses = (applicationId: string) =>
+  request<Analysis[]>(`/applications/${applicationId}/analyses`);
+
+export const reanalyseApplication = (applicationId: string, cv: string) =>
+  request<Analysis>(`/applications/${applicationId}/analyses`, {
+    method: "POST",
+    body: JSON.stringify({ cv }),
+  });
 
 // --- Analyse ---
 
@@ -142,6 +174,6 @@ export async function tailorCVGeneral(cv: string): Promise<TailorResult> {
   });
 }
 
-// --- PDF Generate ---
+// --- PDF layout (client-side print rendering only, no backend endpoint) ---
 
-export type PDFLayout = "classic" | "modern" | "split";
+export type PDFLayout = "classic" | "modern";

@@ -110,6 +110,21 @@ __CV__
 Job Description:
 __JD__
 
+ENTRY FORMATTING (experience & education):
+- Start every job or education entry with a header line containing ONLY the organisation
+  and the role/degree, in this exact shape:
+    Company — Job Title
+  Use an em dash " — " between the company (or school) and the role. If there is no
+  company (e.g. a personal project), omit the " — Company" part and keep just the title.
+- Put the employment (or study) dates ALONE on the very next line, with nothing else on it:
+    Mon YYYY – Mon YYYY
+  Use an en dash " – " inside the range, and "Present" for ongoing roles
+  (e.g. "Jan 2023 – Present"). Abbreviate months to three letters (Jan, Feb, Mar, ...).
+  If no date is known, omit this line entirely.
+- Put achievements on the following lines as bullet points starting with "• ".
+- Keep SECTION titles in ALL CAPS on their own line (EXPERIENCE, EDUCATION, SKILLS, ...).
+- Do NOT use markdown (no **, no #, no backticks). Output plain text only.
+
 STRICT RULES:
 - Never invent experience, companies, dates, qualifications, or technologies not present in the original CV
 - Only rewrite and restructure existing content — never add new content
@@ -141,6 +156,21 @@ CATEGORY 2 — Human readability:
 
 Original CV:
 __CV__
+
+ENTRY FORMATTING (experience & education):
+- Start every job or education entry with a header line containing ONLY the organisation
+  and the role/degree, in this exact shape:
+    Company — Job Title
+  Use an em dash " — " between the company (or school) and the role. If there is no
+  company (e.g. a personal project), omit the " — Company" part and keep just the title.
+- Put the employment (or study) dates ALONE on the very next line, with nothing else on it:
+    Mon YYYY – Mon YYYY
+  Use an en dash " – " inside the range, and "Present" for ongoing roles
+  (e.g. "Jan 2023 – Present"). Abbreviate months to three letters (Jan, Feb, Mar, ...).
+  If no date is known, omit this line entirely.
+- Put achievements on the following lines as bullet points starting with "• ".
+- Keep SECTION titles in ALL CAPS on their own line (EXPERIENCE, EDUCATION, SKILLS, ...).
+- Do NOT use markdown (no **, no #, no backticks). Output plain text only.
 
 STRICT RULES:
 - Never invent experience, companies, dates, or qualifications not in the original
