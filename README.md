@@ -76,13 +76,29 @@ repairs extraction artifacts before analysis. Tailored CVs export to PDF in two 
 
 ### 1. Backend
 
+**macOS / Linux:**
+
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env            # then fill in ANTHROPIC_API_KEY
 ```
+
+**Windows (PowerShell):**
+
+```powershell
+cd backend
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env     # then fill in ANTHROPIC_API_KEY
+```
+
+If PowerShell refuses to run the activation script, allow it for the current
+session only: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.
+Note that PowerShell has no `&&` — run each line separately.
 
 Then start it one of two ways:
 
@@ -108,13 +124,14 @@ Either way the API is on `http://localhost:8000`, with interactive docs at `/doc
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local      # defaults to http://localhost:8000
+cp .env.example .env.local      # Windows: Copy-Item .env.example .env.local
 npm run dev
 ```
 
 Open `http://localhost:3000`.
 
-On Windows, `start-dev.bat` launches both servers in separate windows.
+On Windows, `start-dev.bat` in the repo root launches both servers in separate
+windows — the quickest way to get everything running at once.
 
 ### Environment variables
 
